@@ -1,23 +1,23 @@
-package org.http4s.examples
+package com.example.http4s
+
+import scala.concurrent.{ExecutionContext, Future}
+import scalaz.concurrent.Task
+import scalaz.stream.Process
+import scalaz.stream.Process._
 
 import org.http4s.Header.`Content-Type`
-import org.http4s.json4s.jackson.Json4sJacksonSupport
-import org.http4s.server.HttpService
-import org.http4s.server.middleware.EntityLimiter
-import org.http4s.server.middleware.EntityLimiter.EntityTooLarge
-import org.http4s.EntityDecoder._
-import org.json4s.JsonAST.JValue
-import org.json4s.JsonDSL._
-
-import scalaz.concurrent.Task
-import scalaz.stream.Process, Process.{Get => _, _}
-import scala.concurrent.{ExecutionContext, Future}
 import org.http4s._
 import org.http4s.dsl._
+import org.http4s.json4s.jackson.Json4sJacksonSupport._
+import org.http4s.server._
+import org.http4s.server.middleware.EntityLimiter
+import org.http4s.server.middleware.EntityLimiter.EntityTooLarge
+import org.http4s.server.middleware.PushSupport._
+import org.json4s.JsonDSL._
+import org.json4s.JValue
 import scodec.bits.ByteVector
 
-object ExampleService extends Http4s with Json4sJacksonSupport {
-  import org.http4s.server.middleware.PushSupport._
+object ExampleService {
 
   val flatBigString = (0 until 1000).map{ i => s"This is string number $i" }.foldLeft(""){_ + _}
   val MyVar = AttributeKey[Int]("org.http4s.examples.myVar")
@@ -83,7 +83,7 @@ object ExampleService extends Http4s with Json4sJacksonSupport {
       )
 
     case req@ POST -> Root / "challenge" =>
-      val body = req.body.map { c => new String(c.toArray, req.charset.charset) }.toTask
+      val body = req.body.map { c => new String(c.toArray, req.charset.nioCharset) }.toTask
 
       body.flatMap{ s: String =>
         if (!s.startsWith("go")) {
@@ -128,9 +128,9 @@ object ExampleService extends Http4s with Json4sJacksonSupport {
 
     case req @ POST -> Root / "challenge" =>
       val parser = await1[ByteVector] map {
-        case bits if (new String(bits.toArray, req.charset.charset)).startsWith("Go") =>
+        case bits if (new String(bits.toArray, req.charset.nioCharset)).startsWith("Go") =>
           Task.now(Response(body = emit(bits) fby req.body))
-        case bits if (new String(bits.toArray, req.charset.charset)).startsWith("NoGo") =>
+        case bits if (new String(bits.toArray, req.charset.nioCharset)).startsWith("NoGo") =>
           BadRequest("Booo!")
         case _ =>
           BadRequest("no data")
