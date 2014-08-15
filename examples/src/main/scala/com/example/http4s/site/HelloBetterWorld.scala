@@ -1,6 +1,6 @@
-package org.http4s.examples.site
+package com.example.http4s
+package site
 
-import org.http4s.Http4s._
 import org.http4s.dsl._
 import org.http4s.server.HttpService
 
