@@ -16,12 +16,12 @@
 
 package org.http4s.testing
 
-import cats.effect.IO
+import cats.effect.{IO, SyncIO}
 import cats.effect.std.Dispatcher
 import munit.CatsEffectFunFixtures
 
 trait DispatcherIOFixture { this: CatsEffectFunFixtures =>
 
-  def dispatcher: FunFixture[Dispatcher[IO]] = ResourceFixture(Dispatcher[IO])
+  def dispatcher: SyncIO[FunFixture[Dispatcher[IO]]] = ResourceFixture(Dispatcher[IO])
 
 }
