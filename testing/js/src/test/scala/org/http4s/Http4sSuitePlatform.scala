@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
-package org.http4s.testing
+package org.http4s
 
-import cats.Eq
-import cats.effect.std.Dispatcher
+import cats.effect.unsafe.IORuntime
+import scala.scalajs.js
+import scala.util.Try
 
-trait EqF {
-  implicit def eqF[A, F[_]](implicit eqA: Eq[A], dispatcher: Dispatcher[F]): Eq[F[A]] =
-    Eq.by[F[A], A](f => dispatcher.unsafeRunSync(f))
+trait Http4sSuitePlatform { this: Http4sSuite =>
+  // allow flaky tests on ci
+  override def munitFlakyOK =
+    Try(js.Dynamic.global.process.env.CI).toOption.filterNot(js.isUndefined).isDefined
+}
+
+trait Http4sSuiteCompanionPlatform {
+  val TestIORuntime: IORuntime = IORuntime.global
 }

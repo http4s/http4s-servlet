@@ -18,50 +18,20 @@ package org.http4s
 
 import cats.effect.{IO, Resource}
 import cats.effect.unsafe.{IORuntime, IORuntimeConfig, Scheduler}
-import cats.syntax.all._
-import fs2._
-import fs2.text.utf8
 import java.util.concurrent.{ScheduledExecutorService, ScheduledThreadPoolExecutor, TimeUnit}
-import munit._
 import org.http4s.internal.threads.{newBlockingPool, newDaemonPool, threadFactory}
 import scala.concurrent.ExecutionContext
 
-/** Common stack for http4s' munit based tests
-  */
-trait Http4sSuite extends CatsEffectSuite with DisciplineSuite with munit.ScalaCheckEffectSuite {
-  private[this] val suiteFixtures = List.newBuilder[Fixture[_]]
-
-  override def munitFixtures: Seq[Fixture[_]] = suiteFixtures.result()
-
-  def registerSuiteFixture[A](fixture: Fixture[A]) = {
-    suiteFixtures += fixture
-    fixture
-  }
+trait Http4sSuitePlatform { this: Http4sSuite =>
 
   def resourceSuiteFixture[A](name: String, resource: Resource[IO, A]) = registerSuiteFixture(
     ResourceSuiteLocalFixture(name, resource))
 
   // allow flaky tests on ci
   override def munitFlakyOK = sys.env.get("CI").isDefined
-
-  implicit class ParseResultSyntax[A](self: ParseResult[A]) {
-    def yolo: A = self.valueOr(e => sys.error(e.toString))
-  }
-
-  def writeToString[A](a: A)(implicit W: EntityEncoder[IO, A]): IO[String] =
-    Stream
-      .emit(W.toEntity(a))
-      .covary[IO]
-      .flatMap(_.body)
-      .through(utf8.decode)
-      .foldMonoid
-      .compile
-      .last
-      .map(_.getOrElse(""))
-
 }
 
-object Http4sSuite {
+trait Http4sSuiteCompanionPlatform {
   val TestExecutionContext: ExecutionContext =
     ExecutionContext.fromExecutor(newDaemonPool("http4s-suite", timeout = true))
 
