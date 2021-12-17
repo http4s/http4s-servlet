@@ -154,7 +154,7 @@ abstract class Http4sServlet[F[_]](
       uri = uri,
       httpVersion = version,
       headers = toHeaders(req),
-      body = servletIo.requestBody(req, dispatcher),
+      entity = Entity(servletIo.requestBody(req, dispatcher)),
       attributes = attributes,
     )
 
