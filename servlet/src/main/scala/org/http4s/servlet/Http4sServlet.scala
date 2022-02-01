@@ -28,7 +28,6 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.servlet.http.HttpSession
 import org.http4s._
-import scala.jdk.CollectionConverters._
 import org.http4s.server.SecureSession
 import org.http4s.server.ServerRequestKeys
 import org.log4s.Logger
@@ -37,6 +36,7 @@ import org.typelevel.ci._
 import org.typelevel.vault._
 
 import java.security.cert.X509Certificate
+import scala.jdk.CollectionConverters._
 
 abstract class Http4sServlet[F[_]](
     service: HttpApp[F],
