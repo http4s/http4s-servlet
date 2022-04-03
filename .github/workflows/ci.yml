@@ -26,11 +26,17 @@ jobs:
   build:
     name: Build and Test
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         scala: [2.13.8, 3.1.1]
-        java: [temurin@8]
-        project: [rootJS, rootJVM]
+        java: [temurin@8, temurin@11, temurin@17]
+        project: [rootJVM]
+        exclude:
+          - scala: 3.1.1
+            java: temurin@11
+          - scala: 3.1.1
+            java: temurin@17
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
@@ -54,6 +60,38 @@ jobs:
           java-version: 8
           jdkFile: ${{ steps.download-java-temurin-8.outputs.jdkFile }}
 
+      - name: Download Java (temurin@11)
+        id: download-java-temurin-11
+        if: matrix.java == 'temurin@11'
+        uses: typelevel/download-java@v1
+        with:
+          distribution: temurin
+          java-version: 11
+
+      - name: Setup Java (temurin@11)
+        if: matrix.java == 'temurin@11'
+        uses: actions/setup-java@v2
+        with:
+          distribution: jdkfile
+          java-version: 11
+          jdkFile: ${{ steps.download-java-temurin-11.outputs.jdkFile }}
+
+      - name: Download Java (temurin@17)
+        id: download-java-temurin-17
+        if: matrix.java == 'temurin@17'
+        uses: typelevel/download-java@v1
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Java (temurin@17)
+        if: matrix.java == 'temurin@17'
+        uses: actions/setup-java@v2
+        with:
+          distribution: jdkfile
+          java-version: 17
+          jdkFile: ${{ steps.download-java-temurin-17.outputs.jdkFile }}
+
       - name: Cache sbt
         uses: actions/cache@v2
         with:
@@ -73,10 +111,6 @@ jobs:
         if: matrix.java == 'temurin@8'
         run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' headerCheckAll scalafmtCheckAll 'project /' scalafmtSbtCheck
 
-      - name: scalaJSLink
-        if: matrix.project == 'rootJS'
-        run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' Test/scalaJSLinkerResult
-
       - name: Test
         run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' test
 
@@ -88,13 +122,17 @@ jobs:
         if: matrix.java == 'temurin@8'
         run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' doc
 
+      - name: Check unused compile dependencies
+        if: matrix.java == 'temurin@8'
+        run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' unusedCompileDependenciesTest
+
       - name: Make target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
-        run: mkdir -p target .js/target site/target core/.js/target core/.jvm/target .jvm/target .native/target project/target
+        run: mkdir -p examples/target target .js/target site/target servlet/target testing/jvm/target .jvm/target .native/target project/target
 
       - name: Compress target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
-        run: tar cf targets.tar target .js/target site/target core/.js/target core/.jvm/target .jvm/target .native/target project/target
+        run: tar cf targets.tar examples/target target .js/target site/target servlet/target testing/jvm/target .jvm/target .native/target project/target
 
       - name: Upload target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
@@ -135,6 +173,38 @@ jobs:
           java-version: 8
           jdkFile: ${{ steps.download-java-temurin-8.outputs.jdkFile }}
 
+      - name: Download Java (temurin@11)
+        id: download-java-temurin-11
+        if: matrix.java == 'temurin@11'
+        uses: typelevel/download-java@v1
+        with:
+          distribution: temurin
+          java-version: 11
+
+      - name: Setup Java (temurin@11)
+        if: matrix.java == 'temurin@11'
+        uses: actions/setup-java@v2
+        with:
+          distribution: jdkfile
+          java-version: 11
+          jdkFile: ${{ steps.download-java-temurin-11.outputs.jdkFile }}
+
+      - name: Download Java (temurin@17)
+        id: download-java-temurin-17
+        if: matrix.java == 'temurin@17'
+        uses: typelevel/download-java@v1
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Java (temurin@17)
+        if: matrix.java == 'temurin@17'
+        uses: actions/setup-java@v2
+        with:
+          distribution: jdkfile
+          java-version: 17
+          jdkFile: ${{ steps.download-java-temurin-17.outputs.jdkFile }}
+
       - name: Cache sbt
         uses: actions/cache@v2
         with:
@@ -147,12 +217,12 @@ jobs:
             ~/Library/Caches/Coursier/v1
           key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
 
-      - name: Download target directories (2.13.8, rootJS)
+      - name: Download target directories (2.13.8, rootJVM)
         uses: actions/download-artifact@v2
         with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-2.13.8-rootJS
+          name: target-${{ matrix.os }}-${{ matrix.java }}-2.13.8-rootJVM
 
-      - name: Inflate target directories (2.13.8, rootJS)
+      - name: Inflate target directories (2.13.8, rootJVM)
         run: |
           tar xf targets.tar
           rm targets.tar
@@ -167,12 +237,12 @@ jobs:
           tar xf targets.tar
           rm targets.tar
 
-      - name: Download target directories (3.1.1, rootJS)
+      - name: Download target directories (2.13.8, rootJVM)
         uses: actions/download-artifact@v2
         with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-3.1.1-rootJS
+          name: target-${{ matrix.os }}-${{ matrix.java }}-2.13.8-rootJVM
 
-      - name: Inflate target directories (3.1.1, rootJS)
+      - name: Inflate target directories (2.13.8, rootJVM)
         run: |
           tar xf targets.tar
           rm targets.tar
@@ -230,6 +300,38 @@ jobs:
           distribution: jdkfile
           java-version: 8
           jdkFile: ${{ steps.download-java-temurin-8.outputs.jdkFile }}
+
+      - name: Download Java (temurin@11)
+        id: download-java-temurin-11
+        if: matrix.java == 'temurin@11'
+        uses: typelevel/download-java@v1
+        with:
+          distribution: temurin
+          java-version: 11
+
+      - name: Setup Java (temurin@11)
+        if: matrix.java == 'temurin@11'
+        uses: actions/setup-java@v2
+        with:
+          distribution: jdkfile
+          java-version: 11
+          jdkFile: ${{ steps.download-java-temurin-11.outputs.jdkFile }}
+
+      - name: Download Java (temurin@17)
+        id: download-java-temurin-17
+        if: matrix.java == 'temurin@17'
+        uses: typelevel/download-java@v1
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Java (temurin@17)
+        if: matrix.java == 'temurin@17'
+        uses: actions/setup-java@v2
+        with:
+          distribution: jdkfile
+          java-version: 17
+          jdkFile: ${{ steps.download-java-temurin-17.outputs.jdkFile }}
 
       - name: Cache sbt
         uses: actions/cache@v2

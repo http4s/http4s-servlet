@@ -15,7 +15,6 @@
  */
 
 package com.example.http4s
-package war
 
 import cats.effect.ExitCode
 import cats.effect.IO
