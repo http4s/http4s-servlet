@@ -14,7 +14,7 @@ val Scala213 = "2.13.8"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.1.1")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 
-lazy val root = project.in(file(".")).aggregate(servlet)
+lazy val root = project.in(file(".")).aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.12.3"
 val jettyVersion = "9.4.46.v20220331"
@@ -38,5 +38,25 @@ lazy val servlet = project
       "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
     ),
   )
+
+
+lazy val examples = project
+  .in(file("examples"))
+  .enablePlugins(NoPublishPlugin)
+  .enablePlugins(JettyPlugin)
+  .settings(
+    name := "http4s-servlet-examples",
+    description := "Examples for http4s-servlet",
+    startYear := Some(2013),
+    fork := true,
+    Jetty / containerLibs := List("org.eclipse.jetty" % "jetty-runner" % jettyVersion),
+    libraryDependencies ++= Seq(
+      "javax.servlet" % "javax.servlet-api" % servletApiVersion % Provided,
+      "org.http4s" %% "http4s-circe" % http4sVersion,
+      "org.http4s" %% "http4s-dsl" % http4sVersion,
+      "org.http4s" %% "http4s-scala-xml" % http4sVersion,
+    ),
+  )
+  .dependsOn(servlet)
 
 lazy val docs = project.in(file("site")).enablePlugins(TypelevelSitePlugin)
