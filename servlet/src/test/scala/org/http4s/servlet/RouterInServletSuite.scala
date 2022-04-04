@@ -19,18 +19,17 @@ package org.http4s.servlet
 import cats.effect.IO
 import cats.effect.Resource
 import cats.effect.std.Dispatcher
-import org.http4s.Http4sSuite
+import munit.CatsEffectSuite
 import org.http4s.HttpRoutes
 import org.http4s.dsl.io._
 import org.http4s.server.DefaultServiceErrorHandler
 import org.http4s.server.Router
-import org.http4s.testing.AutoCloseableResource
 
 import java.net.URL
 import scala.io.Source
 
 // Regression tests for #5362 / #5100
-class RouterInServletSuite extends Http4sSuite {
+class RouterInServletSuite extends CatsEffectSuite {
 
   private val mainRoutes = HttpRoutes.of[IO] {
     case GET -> Root => Ok("root")
@@ -122,12 +121,13 @@ class RouterInServletSuite extends Http4sSuite {
   )(server => get(server, "context/servlet/prefix/suffix").assertEquals("suffix"))
 
   private def get(serverPort: Int, path: String): IO[String] =
-    IO.blocking(
-      AutoCloseableResource.resource(
-        Source
-          .fromURL(new URL(s"http://127.0.0.1:$serverPort/$path"))
-      )(_.getLines().mkString)
-    )
+    Resource
+      .make(IO.blocking(Source.fromURL(new URL(s"http://127.0.0.1:$serverPort/$path"))))(source =>
+        IO.delay(source.close())
+      )
+      .use { source =>
+        IO.blocking(source.getLines().mkString)
+      }
 
   private def mkServer(
       routes: HttpRoutes[IO],

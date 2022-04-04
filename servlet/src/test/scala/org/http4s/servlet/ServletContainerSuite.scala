@@ -17,7 +17,9 @@
 package org.http4s
 package servlet
 
-class ServletContainerSuite extends Http4sSuite {
+import munit.CatsEffectSuite
+
+class ServletContainerSuite extends CatsEffectSuite {
   import ServletContainer.prefixMapping
 
   test("prefixMapping should append /* when prefix does not have trailing slash") {

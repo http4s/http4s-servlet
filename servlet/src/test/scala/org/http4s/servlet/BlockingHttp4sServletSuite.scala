@@ -18,13 +18,14 @@ package org.http4s
 package servlet
 
 import cats.effect.IO
+import cats.effect.Resource
 import cats.effect.kernel.Temporal
 import cats.effect.std.Dispatcher
 import cats.syntax.all._
+import munit.CatsEffectSuite
 import org.http4s.dsl.io._
 import org.http4s.server.DefaultServiceErrorHandler
 import org.http4s.syntax.all._
-import org.http4s.testing.AutoCloseableResource
 
 import java.net.HttpURLConnection
 import java.net.URL
@@ -32,7 +33,7 @@ import java.nio.charset.StandardCharsets
 import scala.concurrent.duration._
 import scala.io.Source
 
-class BlockingHttp4sServletSuite extends Http4sSuite {
+class BlockingHttp4sServletSuite extends CatsEffectSuite {
 
   private lazy val service = HttpRoutes
     .of[IO] {
@@ -51,12 +52,13 @@ class BlockingHttp4sServletSuite extends Http4sSuite {
   )
 
   private def get(serverPort: Int, path: String): IO[String] =
-    IO.blocking(
-      AutoCloseableResource.resource(
-        Source
-          .fromURL(new URL(s"http://127.0.0.1:$serverPort/$path"))
-      )(_.getLines().mkString)
-    )
+    Resource
+      .make(IO.blocking(Source.fromURL(new URL(s"http://127.0.0.1:$serverPort/$path"))))(source =>
+        IO(source.close())
+      )
+      .use { source =>
+        IO.blocking(source.getLines().mkString)
+      }
 
   private def post(serverPort: Int, path: String, body: String): IO[String] =
     IO {
@@ -67,10 +69,15 @@ class BlockingHttp4sServletSuite extends Http4sSuite {
       conn.setRequestProperty("Content-Length", bytes.size.toString)
       conn.setDoOutput(true)
       conn.getOutputStream.write(bytes)
-
-      AutoCloseableResource.resource(
-        Source.fromInputStream(conn.getInputStream, StandardCharsets.UTF_8.name)
-      )(_.getLines().mkString)
+      conn
+    }.flatMap { conn =>
+      Resource
+        .make(
+          IO.blocking(Source.fromInputStream(conn.getInputStream, StandardCharsets.UTF_8.name))
+        )(source => IO(source.close()))
+        .use { source =>
+          IO.blocking(source.getLines().mkString)
+        }
     }
 
   servletServer.test("Http4sBlockingServlet handle GET requests") { server =>

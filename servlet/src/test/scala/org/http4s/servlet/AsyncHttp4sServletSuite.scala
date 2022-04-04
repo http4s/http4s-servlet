@@ -21,16 +21,16 @@ import cats.effect.IO
 import cats.effect.Resource
 import cats.effect.std.Dispatcher
 import cats.syntax.all._
+import munit.CatsEffectSuite
 import org.http4s.dsl.io._
 import org.http4s.server.DefaultServiceErrorHandler
 import org.http4s.syntax.all._
-import org.http4s.testing.AutoCloseableResource
 
 import java.net.URL
 import scala.concurrent.duration._
 import scala.io.Source
 
-class AsyncHttp4sServletSuite extends Http4sSuite {
+class AsyncHttp4sServletSuite extends CatsEffectSuite {
   private lazy val service = HttpRoutes
     .of[IO] {
       case GET -> Root / "simple" =>
@@ -48,12 +48,13 @@ class AsyncHttp4sServletSuite extends Http4sSuite {
     ResourceFixture[Int](Dispatcher[IO].flatMap(d => TestEclipseServer(servlet(d))))
 
   private def get(serverPort: Int, path: String): IO[String] =
-    IO.blocking[String](
-      AutoCloseableResource.resource(
-        Source
-          .fromURL(new URL(s"http://127.0.0.1:$serverPort/$path"))
-      )(_.getLines().mkString)
-    )
+    Resource
+      .make(IO.blocking(Source.fromURL(new URL(s"http://127.0.0.1:$serverPort/$path"))))(source =>
+        IO.delay(source.close())
+      )
+      .use { source =>
+        IO.blocking(source.getLines().mkString)
+      }
 
   servletServer.test("AsyncHttp4sServlet handle GET requests") { server =>
     get(server, "simple").assertEquals("simple")

@@ -14,17 +14,28 @@ val Scala213 = "2.13.8"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.1.1")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 
-lazy val root = tlCrossRootProject.aggregate(core)
+lazy val root = project.in(file(".")).aggregate(servlet)
 
-lazy val core = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("core"))
+val asyncHttpClientVersion = "2.12.3"
+val jettyVersion = "9.4.46.v20220331"
+val http4sVersion = "0.23.11"
+val munitCatsEffectVersion = "1.0.7"
+val servletApiVersion = "3.1.0"
+
+lazy val servlet = project
+  .in(file("servlet"))
   .settings(
     name := "http4s-servlet",
+    description := "Portable servlet implementation for http4s servers",
+    startYear := Some(2013),
     libraryDependencies ++= Seq(
-      "org.http4s" %%% "http4s-core" % "0.23.11",
-      "org.scalameta" %%% "munit" % "0.7.29" % Test,
-      "org.typelevel" %%% "munit-cats-effect-3" % "1.0.7" % Test,
+      "javax.servlet" % "javax.servlet-api" % servletApiVersion % Provided,
+      "org.asynchttpclient" % "async-http-client" % asyncHttpClientVersion % Test,
+      "org.eclipse.jetty" % "jetty-server" % jettyVersion % Test,
+      "org.eclipse.jetty" % "jetty-servlet" % jettyVersion % Test,
+      "org.http4s" %% "http4s-dsl" % http4sVersion % Test,
+      "org.http4s" %% "http4s-server" % http4sVersion,
+      "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
     ),
   )
 

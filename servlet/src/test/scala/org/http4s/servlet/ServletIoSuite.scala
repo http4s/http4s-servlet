@@ -18,12 +18,13 @@ package org.http4s
 package servlet
 
 import cats.effect.IO
+import munit.CatsEffectSuite
 
 import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets.UTF_8
 import javax.servlet._
 
-class ServletIoSuite extends Http4sSuite {
+class ServletIoSuite extends CatsEffectSuite {
 
   test(
     "NonBlockingServletIo should decode request body which is smaller than chunk size correctly"
