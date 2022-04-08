@@ -39,7 +39,6 @@ lazy val servlet = project
     ),
   )
 
-
 lazy val examples = project
   .in(file("examples"))
   .enablePlugins(NoPublishPlugin)
