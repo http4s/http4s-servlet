@@ -17,7 +17,7 @@ ThisBuild / scalaVersion := Scala213 // the default Scala
 lazy val root = project.in(file(".")).aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.12.3"
-val jettyVersion = "9.4.46.v20220331"
+val jettyVersion = "11.0.9"
 val http4sVersion = "0.23.11"
 val munitCatsEffectVersion = "1.0.7"
 val servletApiVersion = "3.1.0"
@@ -38,7 +38,6 @@ lazy val servlet = project
       "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
     ),
   )
-
 
 lazy val examples = project
   .in(file("examples"))
