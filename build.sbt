@@ -39,7 +39,6 @@ lazy val servlet = project
     ),
   )
 
-
 lazy val examples = project
   .in(file("examples"))
   .enablePlugins(NoPublishPlugin)
@@ -51,10 +50,7 @@ lazy val examples = project
     fork := true,
     Jetty / containerLibs := List("org.eclipse.jetty" % "jetty-runner" % jettyVersion),
     libraryDependencies ++= Seq(
-      "javax.servlet" % "javax.servlet-api" % servletApiVersion % Provided,
-      "org.http4s" %% "http4s-circe" % http4sVersion,
-      "org.http4s" %% "http4s-dsl" % http4sVersion,
-      "org.http4s" %% "http4s-scala-xml" % http4sVersion,
+      "javax.servlet" % "javax.servlet-api" % servletApiVersion % Provided
     ),
   )
   .dependsOn(servlet)
