@@ -11,7 +11,7 @@ ThisBuild / developers := List(
 ThisBuild / tlSitePublishBranch := Some("main")
 
 val Scala213 = "2.13.8"
-ThisBuild / crossScalaVersions := Seq(Scala213, "3.1.2")
+ThisBuild / crossScalaVersions := Seq(Scala213, "3.1.1")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 
 lazy val root = project.in(file(".")).aggregate(servlet, examples)
@@ -38,6 +38,7 @@ lazy val servlet = project
       "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
     ),
   )
+
 
 lazy val examples = project
   .in(file("examples"))
