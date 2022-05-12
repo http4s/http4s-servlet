@@ -1,5 +1,6 @@
 // https://typelevel.org/sbt-typelevel/faq.html#what-is-a-base-version-anyway
-ThisBuild / tlBaseVersion := "0.0" // your current series x.y
+ThisBuild / tlBaseVersion := "0.23" // your current series x.y
+ThisBuild / tlMimaPreviousVersions ++= (0 to 11).map(y => s"0.23.$y").toSet
 
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / developers := List(
@@ -14,7 +15,7 @@ val Scala213 = "2.13.8"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.1.1")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 
-lazy val root = project.in(file(".")).aggregate(servlet, examples)
+lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.12.3"
 val jettyVersion = "9.4.46.v20220331"
