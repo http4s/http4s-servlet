@@ -15,7 +15,7 @@ val Scala213 = "2.13.8"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.1.1")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 
-lazy val root = project.in(file(".")).aggregate(servlet, examples).enablePlugins(NoPublishPlugin)
+lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.12.3"
 val jettyVersion = "9.4.46.v20220331"
