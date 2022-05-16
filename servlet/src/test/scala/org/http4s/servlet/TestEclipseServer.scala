@@ -39,7 +39,7 @@ object TestEclipseServer {
       .evalMap { server =>
         IO {
           val connector =
-            new ServerConnector(server, new HttpConnectionFactory(new HttpConfiguration()))
+            new ServerConnector(server, new HttpConnectionFactory(new HttpConfiguration))
 
           val context = new ServletContextHandler
           context.addServlet(new ServletHolder(servlet), servletPath)
