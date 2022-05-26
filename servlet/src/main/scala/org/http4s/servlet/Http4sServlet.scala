@@ -17,6 +17,7 @@
 package org.http4s.servlet
 
 import cats.effect.kernel.Async
+import cats.effect.kernel.Sync
 import cats.effect.std.Dispatcher
 import cats.syntax.all._
 import com.comcast.ip4s.IpAddress
@@ -42,8 +43,17 @@ abstract class Http4sServlet[F[_]](
     service: HttpApp[F],
     servletIo: ServletIo[F],
     dispatcher: Dispatcher[F],
-)(implicit F: Async[F])
+)(implicit F: Sync[F])
     extends HttpServlet {
+
+  @deprecated("Binary compatibility", "0.23.12")
+  private[servlet] def this(
+      service: HttpApp[F],
+      servletIo: ServletIo[F],
+      dispatcher: Dispatcher[F],
+      async: Async[F],
+  ) = this(service, servletIo, dispatcher)(async: Sync[F])
+
   protected val logger: Logger = getLogger
 
   // micro-optimization: unwrap the service and call its .run directly
