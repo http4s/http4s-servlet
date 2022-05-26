@@ -14,13 +14,17 @@ val Scala213 = "2.13.8"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.1.2")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 
+// Jetty 10+, for testing, requires Java 11.
+ThisBuild / githubWorkflowJavaVersions -= JavaSpec.temurin("8")
+ThisBuild / tlJdkRelease := Some(8)
+
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.12.3"
-val jettyVersion = "9.4.46.v20220331"
+val jettyVersion = "10.0.9"
 val http4sVersion = "0.23.12"
 val munitCatsEffectVersion = "1.0.7"
-val servletApiVersion = "3.1.0"
+val servletApiVersion = "4.0.1"
 
 lazy val servlet = project
   .in(file("servlet"))
