@@ -32,9 +32,7 @@ import scala.annotation.tailrec
 
 /** Determines the mode of I/O used for reading request bodies and writing response bodies.
   */
-sealed abstract class ServletIo[F[_]: Async] {
-  protected[servlet] val F: Async[F] = Async[F]
-
+sealed trait ServletIo[F[_]] {
   protected[servlet] def reader(servletRequest: HttpServletRequest): EntityBody[F]
 
   /** May install a listener on the servlet response. */
@@ -46,7 +44,7 @@ sealed abstract class ServletIo[F[_]: Async] {
   * This is more CPU efficient per request than [[NonBlockingServletIo]], but is likely to
   * require a larger request thread pool for the same load.
   */
-final case class BlockingServletIo[F[_]: Async](chunkSize: Int) extends ServletIo[F] {
+final case class BlockingServletIo[F[_]](chunkSize: Int)(implicit F: Sync[F]) extends ServletIo[F] {
   override protected[servlet] def reader(servletRequest: HttpServletRequest): EntityBody[F] =
     io.readInputStream[F](F.pure(servletRequest.getInputStream), chunkSize)
 
@@ -57,7 +55,7 @@ final case class BlockingServletIo[F[_]: Async](chunkSize: Int) extends ServletI
     val flush = response.isChunked
     response.body.chunks
       .evalTap { chunk =>
-        Async[F].blocking {
+        Sync[F].blocking {
           // Avoids copying for specialized chunks
           val byteChunk = chunk.toArraySlice
           out.write(byteChunk.values, byteChunk.offset, byteChunk.length)
@@ -77,7 +75,8 @@ final case class BlockingServletIo[F[_]: Async](chunkSize: Int) extends ServletI
   * under high load up through  at least Tomcat 8.0.15.  These appear to be harmless, but are
   * operationally annoying.
   */
-final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends ServletIo[F] {
+final case class NonBlockingServletIo[F[_]](chunkSize: Int)(implicit F: Async[F])
+    extends ServletIo[F] {
   private[this] val logger = getLogger
 
   private[this] def rightSome[A](a: A) = Right(Some(a))
