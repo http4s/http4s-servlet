@@ -108,7 +108,7 @@ class AsyncHttp4sServlet[F[_]](
       val response = Response[F](Status.InternalServerError)
       // We don't know what I/O mode we're in here, and we're not rendering a body
       // anyway, so we use a NullBodyWriter.
-      val f = renderResponse(response, servletResponse, NullBodyWriter) *>
+      val f = renderResponse(response, servletResponse, nullBodyWriter) *>
         F.delay(
           if (servletRequest.isAsyncStarted)
             servletRequest.getAsyncContext.complete()

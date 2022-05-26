@@ -20,8 +20,7 @@ import javax.servlet._
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-/** Mainly a convenience for our servlet examples, but, hey, why not.
-  */
+@deprecated("Not releated to http4s. Will be removed from public API", "0.23.12")
 trait DefaultFilter extends Filter {
   override def init(filterConfig: FilterConfig): Unit = {}
 
