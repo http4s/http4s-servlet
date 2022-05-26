@@ -17,7 +17,6 @@
 package org.http4s
 package servlet
 
-import cats.effect.kernel.Async
 import cats.effect.kernel.Sync
 import cats.effect.std.Dispatcher
 import cats.syntax.all._
@@ -33,16 +32,6 @@ class BlockingHttp4sServlet[F[_]](
     dispatcher: Dispatcher[F],
 )(implicit F: Sync[F])
     extends Http4sServlet[F](service, servletIo, dispatcher) {
-
-  @deprecated("Binary compatibility", "0.23.12")
-  private[servlet] def this(
-      service: HttpApp[F],
-      servletIo: ServletIo[F],
-      serviceErrorHandler: ServiceErrorHandler[F],
-      dispatcher: Dispatcher[F],
-      async: Async[F],
-  ) =
-    this(service, servletIo, serviceErrorHandler, dispatcher)(async: Sync[F])
 
   override def service(
       servletRequest: HttpServletRequest,
@@ -100,16 +89,4 @@ object BlockingHttp4sServlet {
       DefaultServiceErrorHandler,
       dispatcher,
     )
-
-  @deprecated(
-    "Preserved for binary compatibility.  Use the overload with the implicit Sync",
-    "0.23.12",
-  )
-  def apply[F[_]](
-      service: HttpApp[F],
-      servletIo: ServletIo[F],
-      dispatcher: Dispatcher[F],
-      async: Async[F],
-  ): BlockingHttp4sServlet[F] =
-    apply(service, servletIo, dispatcher)(async: Sync[F])
 }
