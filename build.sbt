@@ -16,6 +16,7 @@ ThisBuild / crossScalaVersions := Seq(Scala213, "3.1.2")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 
 // Jetty 10+, for testing, requires Java 11.
+ThisBuild / githubWorkflowJavaVersions -= JavaSpec.temurin("8")
 ThisBuild / tlJdkRelease := Some(8)
 
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
