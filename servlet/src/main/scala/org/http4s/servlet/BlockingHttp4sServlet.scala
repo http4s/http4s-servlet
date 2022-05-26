@@ -101,7 +101,11 @@ object BlockingHttp4sServlet {
       dispatcher,
     )
 
-  protected[servlet] def apply[F[_]](
+  @deprecated(
+    "Preserved for binary compatibility.  Use the overload with the implicit Sync",
+    "0.23.12",
+  )
+  def apply[F[_]](
       service: HttpApp[F],
       servletIo: ServletIo[F],
       dispatcher: Dispatcher[F],
