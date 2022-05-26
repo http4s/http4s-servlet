@@ -18,6 +18,7 @@ package org.http4s
 package servlet
 
 import cats.effect.kernel.Async
+import cats.effect.kernel.Sync
 import cats.effect.std.Dispatcher
 import cats.syntax.all._
 import org.http4s.server._
@@ -30,8 +31,19 @@ class BlockingHttp4sServlet[F[_]](
     servletIo: ServletIo[F],
     serviceErrorHandler: ServiceErrorHandler[F],
     dispatcher: Dispatcher[F],
-)(implicit F: Async[F])
+)(implicit F: Sync[F])
     extends Http4sServlet[F](service, servletIo, dispatcher) {
+
+  @deprecated("Binary compatibility", "0.23.12")
+  private[servlet] def this(
+      service: HttpApp[F],
+      servletIo: ServletIo[F],
+      serviceErrorHandler: ServiceErrorHandler[F],
+      dispatcher: Dispatcher[F],
+      async: Async[F],
+  ) =
+    this(service, servletIo, serviceErrorHandler, dispatcher)(async: Sync[F])
+
   override def service(
       servletRequest: HttpServletRequest,
       servletResponse: HttpServletResponse,
@@ -71,13 +83,13 @@ class BlockingHttp4sServlet[F[_]](
         val response = Response[F](Status.InternalServerError)
         // We don't know what I/O mode we're in here, and we're not rendering a body
         // anyway, so we use a NullBodyWriter.
-        renderResponse(response, servletResponse, NullBodyWriter)
+        renderResponse(response, servletResponse, nullBodyWriter)
       }
     }
 }
 
 object BlockingHttp4sServlet {
-  def apply[F[_]: Async](
+  def apply[F[_]: Sync](
       service: HttpApp[F],
       servletIo: ServletIo[F],
       dispatcher: Dispatcher[F],
@@ -88,4 +100,12 @@ object BlockingHttp4sServlet {
       DefaultServiceErrorHandler,
       dispatcher,
     )
+
+  protected[servlet] def apply[F[_]](
+      service: HttpApp[F],
+      servletIo: ServletIo[F],
+      dispatcher: Dispatcher[F],
+      async: Async[F],
+  ): BlockingHttp4sServlet[F] =
+    apply(service, servletIo, dispatcher)(async: Sync[F])
 }

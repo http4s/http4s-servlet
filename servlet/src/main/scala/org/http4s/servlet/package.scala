@@ -16,12 +16,17 @@
 
 package org.http4s
 
+import cats.Applicative
 import cats.effect.Async
 
 package object servlet {
   protected[servlet] type BodyWriter[F[_]] = Response[F] => F[Unit]
 
+  @deprecated("Use nullBodyWriter with Applicative constraint", "0.23.12")
   protected[servlet] def NullBodyWriter[F[_]](implicit F: Async[F]): BodyWriter[F] =
+    nullBodyWriter[F]
+
+  private[servlet] def nullBodyWriter[F[_]](implicit F: Applicative[F]): BodyWriter[F] =
     _ => F.unit
 
   protected[servlet] val DefaultChunkSize = 4096
