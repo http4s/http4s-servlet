@@ -18,7 +18,7 @@ ThisBuild / scalaVersion := Scala213 // the default Scala
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.12.3"
-val jettyVersion = "9.4.46.v20220331"
+val jettyVersion = "11.0.9"
 val http4sVersion = "0.23.12"
 val munitCatsEffectVersion = "1.0.7"
 val servletApiVersion = "3.1.0"
