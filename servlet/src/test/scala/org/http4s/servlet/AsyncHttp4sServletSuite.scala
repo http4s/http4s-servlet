@@ -22,6 +22,7 @@ import cats.effect.IO
 import cats.effect.Deferred
 import cats.effect.Resource
 import cats.effect.std.Dispatcher
+import cats.syntax.all._
 import fs2.Chunk
 import fs2.Stream
 import munit.CatsEffectSuite
@@ -210,6 +211,45 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
         }
       }
       .assertEquals(Chunk(0.toByte, 1.toByte))
+  }
+
+  servletServer.test("AsyncHttp4sServlet should not reorder lots of itsy-bitsy chunks") {
+    server =>
+      val body = (0 until 4096).map(_.toByte).toArray
+      Dispatcher[IO]
+        .use { dispatcher =>
+          clientR.use { client =>
+            for {
+              content <- IO(new DeferredContentProvider())
+              bodyFiber <- IO
+                .async_[Chunk[Byte]] { cb =>
+                  var body = Chunk.empty[Byte]
+                  client
+                    .POST(s"http://127.0.0.1:$server/echo")
+                    .content(content)
+                    .send(new JResponse.Listener {
+                      override def onContent(resp: JResponse, bb: ByteBuffer) =
+                        dispatcher.unsafeRunSync(for {
+                          buf <- IO(new Array[Byte](bb.remaining()))
+                          _ <- IO(bb.get(buf))
+                          _ <- IO { body = body ++ Chunk.array(buf) }
+                        } yield ())
+                      override def onFailure(resp: JResponse, t: Throwable) =
+                        cb(Left(t))
+                      override def onSuccess(resp: JResponse) =
+                        cb(Right(body))
+                    })
+                }
+                .start
+              _ <- body.toList.traverse_(b =>
+                IO(content.offer(ByteBuffer.wrap(Array[Byte](b)))) >> IO(content.flush())
+              )
+              _ <- IO(content.close())
+              body <- bodyFiber.joinWithNever
+            } yield body
+          }
+        }
+        .assertEquals(Chunk.array(body))
   }
 
   servletServer.test("AsyncHttp4sServlet work for shifted IO") { server =>
