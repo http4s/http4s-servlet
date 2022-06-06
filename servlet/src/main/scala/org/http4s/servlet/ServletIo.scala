@@ -51,7 +51,16 @@ sealed abstract class ServletIo[F[_]: Async] {
   }
 
   /** May install a listener on the servlet response. */
+  @deprecated("Prefer bodyWriter, which has access to a Dispatcher", "0.23.12")
   protected[servlet] def initWriter(servletResponse: HttpServletResponse): BodyWriter[F]
+
+  @nowarn("cat=deprecation")
+  def bodyWriter(servletResponse: HttpServletResponse, dispatcher: Dispatcher[F])(
+      response: Response[F]
+  ): F[Unit] = {
+    val _ = dispatcher
+    initWriter(servletResponse)(response)
+  }
 }
 
 /** Use standard blocking reads and writes.
@@ -337,6 +346,71 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
           .append(awaitLastWrite)
           .compile
           .drain
+    }
+  }
+
+  /* The queue implementation is influenced by ideas in jetty4s
+   * https://github.com/IndiscriminateCoding/jetty4s/blob/0.0.10/server/src/main/scala/jetty4s/server/HttpResourceHandler.scala
+   */
+  override def bodyWriter(
+      servletResponse: HttpServletResponse,
+      dispatcher: Dispatcher[F],
+  )(response: Response[F]): F[Unit] = {
+    sealed trait Write
+    final case class Bytes(chunk: Chunk[Byte]) extends Write
+    case object End extends Write
+    case object Init extends Write
+
+    val autoFlush = response.isChunked
+
+    F.delay(servletResponse.getOutputStream).flatMap { out =>
+      Queue.synchronous[F, Write].flatMap { q =>
+        Deferred[F, Either[Throwable, Unit]].flatMap { done =>
+          val writeBody = F.delay(out.setWriteListener(new WriteListener {
+            def onWritePossible(): Unit = {
+              def loopIfReady = F.delay(out.isReady()).flatMap {
+                case true => go
+                case false => F.unit
+              }
+
+              def flush =
+                if (autoFlush) {
+                  F.delay(out.isReady()).flatMap {
+                    case true => F.delay(out.flush()) >> loopIfReady
+                    case false => F.unit
+                  }
+                } else
+                  loopIfReady
+
+              def go: F[Unit] =
+                q.take.flatMap {
+                  case Bytes(slice: Chunk.ArraySlice[_]) =>
+                    F.delay(
+                      out.write(slice.values.asInstanceOf[Array[Byte]], slice.offset, slice.length)
+                    ) >> flush
+                  case Bytes(chunk) =>
+                    F.delay(out.write(chunk.toArray)) >> flush
+                  case End =>
+                    F.delay(out.flush()) >> done.complete(Either.unit).attempt.void
+                  case Init =>
+                    if (autoFlush) flush else go
+                }
+
+              dispatcher.unsafeRunAndForget(go)
+            }
+            def onError(t: Throwable): Unit =
+              dispatcher.unsafeRunAndForget(done.complete(Left(t)).attempt.void)
+          }))
+
+          val writes = Stream.emit(Init) ++ response.body.chunks.map(Bytes(_)) ++ Stream.emit(End)
+
+          Stream
+            .eval(writeBody >> done.get.rethrow)
+            .mergeHaltL(writes.foreach(q.offer))
+            .compile
+            .drain
+        }
+      }
     }
   }
 }
