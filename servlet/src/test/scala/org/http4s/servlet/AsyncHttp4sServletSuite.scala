@@ -18,8 +18,8 @@ package org.http4s
 package servlet
 
 import cats.Monoid
-import cats.effect.IO
 import cats.effect.Deferred
+import cats.effect.IO
 import cats.effect.Resource
 import cats.effect.std.Dispatcher
 import cats.syntax.all._
