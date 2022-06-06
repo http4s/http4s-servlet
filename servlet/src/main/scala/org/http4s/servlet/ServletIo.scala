@@ -25,6 +25,7 @@ import fs2._
 import org.http4s.internal.bug
 import org.log4s.getLogger
 
+import java.util.Arrays
 import java.util.concurrent.atomic.AtomicReference
 import javax.servlet.ReadListener
 import javax.servlet.WriteListener
@@ -220,24 +221,37 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
     Stream.eval(F.delay(servletRequest.getInputStream)).flatMap { in =>
       Stream.eval(Queue.synchronous[F, Read]).flatMap { q =>
         val readBody = Stream.exec(F.delay(in.setReadListener(new ReadListener {
+          var buf: Array[Byte] = _
+          unsafeReplaceBuffer()
+
+          def unsafeReplaceBuffer() =
+            buf = new Array[Byte](chunkSize)
+
           def onDataAvailable(): Unit = {
-            def go: F[Unit] =
-              F.delay(new Array[Byte](chunkSize)).flatMap { buff =>
-                F.delay(in.read(buff)).flatMap {
-                  case len if len >= 0 =>
-                    q.offer(Bytes(Chunk.array(buff, 0, len))) >>
-                      F.delay(in.isReady()).flatMap {
-                        case true => go
-                        case false => F.unit
-                      }
-                  case _ =>
-                    F.unit
-                }
+            def loopIfReady =
+              F.delay(in.isReady()).flatMap {
+                case true => go
+                case false => F.unit
               }
+
+            def go: F[Unit] =
+              F.delay(in.read(buf)).flatMap {
+                case len if len == chunkSize =>
+                  // We used the whole buffer.  Replace it new before next read.
+                  q.offer(Bytes(Chunk.array(buf))) >> F.delay(unsafeReplaceBuffer()) >> loopIfReady
+                case len if len >= 0 =>
+                  // Got a partial chunk.  Copy it, and reuse the current buffer.
+                  q.offer(Bytes(Chunk.array(Arrays.copyOf(buf, len)))) >> loopIfReady
+                case _ =>
+                  F.unit
+              }
+
             dispatcher.unsafeRunSync(go)
           }
+
           def onAllDataRead(): Unit =
             dispatcher.unsafeRunSync(q.offer(End))
+
           def onError(t: Throwable): Unit =
             dispatcher.unsafeRunSync(q.offer(Error(t)))
         })))
