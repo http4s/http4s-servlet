@@ -32,7 +32,7 @@ import javax.servlet.annotation.WebListener
   * 3. To stop: `examples/Jetty/stop`
   */
 class Bootstrap extends ServletContextListener {
-  val routes = HttpRoutes.of[IO] {
+  val routes: HttpRoutes[IO] = HttpRoutes.of[IO] {
     case req if req.method == Method.GET =>
       IO.pure(Response(Status.Ok).withEntity("pong"))
   }
