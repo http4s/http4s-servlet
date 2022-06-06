@@ -105,7 +105,7 @@ jobs:
         run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' doc
 
       - name: Check scalafix lints
-        if: matrix.java == 'temurin@8' && !startsWith(matrix.scala, '3.')
+        if: matrix.java == 'temurin@11' && !startsWith(matrix.scala, '3.')
         run: sbt 'project ${{ matrix.project }}' '++${{ matrix.scala }}' 'scalafixAll --check'
 
       - name: Check unused compile dependencies
