@@ -31,7 +31,7 @@ lazy val servlet = project
     startYear := Some(2013),
     libraryDependencies ++= Seq(
       "javax.servlet" % "javax.servlet-api" % servletApiVersion % Provided,
-      "org.asynchttpclient" % "async-http-client" % asyncHttpClientVersion % Test,
+      "org.eclipse.jetty" % "jetty-client" % jettyVersion % Test,
       "org.eclipse.jetty" % "jetty-server" % jettyVersion % Test,
       "org.eclipse.jetty" % "jetty-servlet" % jettyVersion % Test,
       "org.http4s" %% "http4s-dsl" % http4sVersion % Test,
