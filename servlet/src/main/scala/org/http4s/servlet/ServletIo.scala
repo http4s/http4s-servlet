@@ -42,9 +42,13 @@ sealed abstract class ServletIo[F[_]: Async] {
   protected[servlet] def reader(servletRequest: HttpServletRequest): EntityBody[F]
 
   @nowarn("cat=deprecation")
-  @nowarn("cat=unused")
-  def requestBody(servletRequest: HttpServletRequest, dispatcher: Dispatcher[F]): Stream[F, Byte] =
+  def requestBody(
+      servletRequest: HttpServletRequest,
+      dispatcher: Dispatcher[F],
+  ): Stream[F, Byte] = {
+    val _ = dispatcher // unused
     reader(servletRequest)
+  }
 
   /** May install a listener on the servlet response. */
   protected[servlet] def initWriter(servletResponse: HttpServletResponse): BodyWriter[F]
