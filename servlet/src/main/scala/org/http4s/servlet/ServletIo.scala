@@ -219,7 +219,7 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
     final case class Error(t: Throwable) extends Read
 
     Stream.eval(F.delay(servletRequest.getInputStream)).flatMap { in =>
-      Stream.eval(Queue.synchronous[F, Read]).flatMap { q =>
+      Stream.eval(Queue.bounded[F, Read](4)).flatMap { q =>
         val readBody = Stream.exec(F.delay(in.setReadListener(new ReadListener {
           var buf: Array[Byte] = _
           unsafeReplaceBuffer()
@@ -378,7 +378,7 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
     val autoFlush = response.isChunked
 
     F.delay(servletResponse.getOutputStream).flatMap { out =>
-      Queue.synchronous[F, Write].flatMap { q =>
+      Queue.bounded[F, Write](4).flatMap { q =>
         Deferred[F, Either[Throwable, Unit]].flatMap { done =>
           val writeBody = F.delay(out.setWriteListener(new WriteListener {
             def onWritePossible(): Unit = {
