@@ -25,7 +25,7 @@ import org.http4s.server._
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-class BlockingHttp4sServlet[F[_]](
+class BlockingHttp4sServlet[F[_]] private (
     service: HttpApp[F],
     servletIo: ServletIo[F],
     serviceErrorHandler: ServiceErrorHandler[F],
@@ -33,13 +33,21 @@ class BlockingHttp4sServlet[F[_]](
 )(implicit F: Sync[F])
     extends Http4sServlet[F](service, servletIo, dispatcher) {
 
+  def this(
+      service: HttpApp[F],
+      servletIo: BlockingServletIo[F],
+      serviceErrorHandler: ServiceErrorHandler[F],
+      dispatcher: Dispatcher[F],
+  )(implicit F: Sync[F]) =
+    this(service, servletIo: ServletIo[F], serviceErrorHandler, dispatcher)(F)
+
   override def service(
       servletRequest: HttpServletRequest,
       servletResponse: HttpServletResponse,
   ): Unit = {
     val result = F
       .defer {
-        val bodyWriter = servletIo.initWriter(servletResponse)
+        val bodyWriter = servletIo.bodyWriter(servletResponse, dispatcher) _
 
         val render = toRequest(servletRequest).fold(
           onParseFailure(_, servletResponse, bodyWriter),
