@@ -246,14 +246,19 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
                   F.unit
               }
 
-            dispatcher.unsafeRunSync(go)
+            unsafeRunAndForget(go)
           }
 
           def onAllDataRead(): Unit =
-            dispatcher.unsafeRunSync(q.offer(End))
+            unsafeRunAndForget(q.offer(End))
 
           def onError(t: Throwable): Unit =
-            dispatcher.unsafeRunSync(q.offer(Error(t)))
+            unsafeRunAndForget(q.offer(Error(t)))
+
+          def unsafeRunAndForget[A](fa: F[A]): Unit =
+            dispatcher.unsafeRunAndForget(
+              fa.onError(t => F.delay(logger.error(t)("Error in servlet read listener")))
+            )
         })))
 
         def pullBody: Pull[F, Byte, Unit] =
@@ -410,10 +415,15 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
                     if (autoFlush) flush else go
                 }
 
-              dispatcher.unsafeRunAndForget(go)
+              unsafeRunAndForget(go)
             }
             def onError(t: Throwable): Unit =
-              dispatcher.unsafeRunAndForget(done.complete(Left(t)).attempt.void)
+              unsafeRunAndForget(done.complete(Left(t)))
+
+            def unsafeRunAndForget[A](fa: F[A]): Unit =
+              dispatcher.unsafeRunAndForget(
+                fa.onError(t => F.delay(logger.error(t)("Error in servlet write listener")))
+              )
           }))
 
           val writes = Stream.emit(Init) ++ response.body.chunks.map(Bytes(_)) ++ Stream.emit(End)
