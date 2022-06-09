@@ -41,16 +41,6 @@ class BlockingHttp4sServlet[F[_]] private (
   )(implicit F: Sync[F]) =
     this(service, servletIo: ServletIo[F], serviceErrorHandler, dispatcher)(F)
 
-  @deprecated("Binary compatibility", "0.23.12")
-  private[servlet] def this(
-      service: HttpApp[F],
-      servletIo: ServletIo[F],
-      serviceErrorHandler: ServiceErrorHandler[F],
-      dispatcher: Dispatcher[F],
-      async: Async[F],
-  ) =
-    this(service, servletIo, serviceErrorHandler, dispatcher)(async: Sync[F])
-
   override def service(
       servletRequest: HttpServletRequest,
       servletResponse: HttpServletResponse,
