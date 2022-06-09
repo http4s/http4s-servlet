@@ -60,7 +60,7 @@ class AsyncHttp4sServlet[F[_]](
       val ctx = servletRequest.startAsync()
       ctx.setTimeout(asyncTimeoutMillis)
       // Must be done on the container thread for Tomcat's sake when using async I/O.
-      val bodyWriter = servletIo.initWriter(servletResponse)
+      val bodyWriter = servletIo.bodyWriter(servletResponse, dispatcher) _
       val result = F
         .attempt(
           toRequest(servletRequest).fold(

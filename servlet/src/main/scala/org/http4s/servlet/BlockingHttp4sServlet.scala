@@ -58,7 +58,7 @@ class BlockingHttp4sServlet[F[_]] private (
   ): Unit = {
     val result = F
       .defer {
-        val bodyWriter = servletIo.initWriter(servletResponse)
+        val bodyWriter = servletIo.bodyWriter(servletResponse, dispatcher) _
 
         val render = toRequest(servletRequest).fold(
           onParseFailure(_, servletResponse, bodyWriter),
