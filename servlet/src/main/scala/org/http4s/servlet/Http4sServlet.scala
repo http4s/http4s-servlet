@@ -32,11 +32,11 @@ import org.typelevel.ci._
 import org.typelevel.vault._
 
 import java.security.cert.X509Certificate
-import javax.servlet.ServletConfig
-import javax.servlet.http.HttpServlet
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
-import javax.servlet.http.HttpSession
+import jakarta.servlet.ServletConfig
+import jakarta.servlet.http.HttpServlet
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpSession
 
 abstract class Http4sServlet[F[_]](
     service: HttpApp[F],
@@ -135,12 +135,12 @@ abstract class Http4sServlet[F[_]](
           .insert(
             ServerRequestKeys.SecureSession,
             (
-              Option(req.getAttribute("javax.servlet.request.ssl_session_id").asInstanceOf[String]),
-              Option(req.getAttribute("javax.servlet.request.cipher_suite").asInstanceOf[String]),
-              Option(req.getAttribute("javax.servlet.request.key_size").asInstanceOf[Int]),
+              Option(req.getAttribute("jakarta.servlet.request.ssl_session_id").asInstanceOf[String]),
+              Option(req.getAttribute("jakarta.servlet.request.cipher_suite").asInstanceOf[String]),
+              Option(req.getAttribute("jakarta.servlet.request.key_size").asInstanceOf[Int]),
               Option(
                 req
-                  .getAttribute("javax.servlet.request.X509Certificate")
+                  .getAttribute("jakarta.servlet.request.X509Certificate")
                   .asInstanceOf[Array[X509Certificate]]
               ),
             )

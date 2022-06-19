@@ -22,8 +22,8 @@ import cats.effect.std.Dispatcher
 import cats.syntax.all._
 import org.http4s.server._
 
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 
 class BlockingHttp4sServlet[F[_]] private (
     service: HttpApp[F],

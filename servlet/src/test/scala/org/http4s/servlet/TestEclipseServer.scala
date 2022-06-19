@@ -25,7 +25,7 @@ import org.eclipse.jetty.server.{Server => EclipseServer}
 import org.eclipse.jetty.servlet.ServletContextHandler
 import org.eclipse.jetty.servlet.ServletHolder
 
-import javax.servlet.Servlet
+import jakarta.servlet.Servlet
 
 object TestEclipseServer {
 

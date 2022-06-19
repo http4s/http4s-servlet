@@ -16,8 +16,8 @@
 
 package org.http4s.servlet
 
-import javax.servlet.AsyncEvent
-import javax.servlet.AsyncListener
+import jakarta.servlet.AsyncEvent
+import jakarta.servlet.AsyncListener
 
 protected[servlet] abstract class AbstractAsyncListener extends AsyncListener {
   override def onComplete(event: AsyncEvent): Unit = {}

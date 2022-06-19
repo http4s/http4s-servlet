@@ -24,8 +24,8 @@ import org.http4s.server.DefaultServiceErrorHandler
 import org.http4s.server.defaults
 import org.http4s.syntax.all._
 
-import javax.servlet.ServletContext
-import javax.servlet.ServletRegistration
+import jakarta.servlet.ServletContext
+import jakarta.servlet.ServletRegistration
 import scala.concurrent.duration.Duration
 
 trait ServletContextSyntax {

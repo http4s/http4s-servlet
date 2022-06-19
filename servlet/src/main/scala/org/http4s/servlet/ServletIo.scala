@@ -25,10 +25,10 @@ import fs2._
 import org.log4s.getLogger
 
 import java.util.Arrays
-import javax.servlet.ReadListener
-import javax.servlet.WriteListener
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
+import jakarta.servlet.ReadListener
+import jakarta.servlet.WriteListener
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 
 /** Determines the mode of I/O used for reading request bodies and writing response bodies.
   */

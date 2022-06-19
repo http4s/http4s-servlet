@@ -22,9 +22,9 @@ import cats.effect.unsafe.implicits.global
 import org.http4s._
 import org.http4s.servlet.syntax._
 
-import javax.servlet.ServletContextEvent
-import javax.servlet.ServletContextListener
-import javax.servlet.annotation.WebListener
+import jakarta.servlet.ServletContextEvent
+import jakarta.servlet.ServletContextListener
+import jakarta.servlet.annotation.WebListener
 
 @WebListener
 /** 1. To start from sbt: `examples/Jetty/start`
