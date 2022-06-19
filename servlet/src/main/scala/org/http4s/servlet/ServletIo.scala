@@ -22,13 +22,13 @@ import cats.effect.std.Dispatcher
 import cats.effect.std.Queue
 import cats.syntax.all._
 import fs2._
-import org.log4s.getLogger
-
-import java.util.Arrays
 import jakarta.servlet.ReadListener
 import jakarta.servlet.WriteListener
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.log4s.getLogger
+
+import java.util.Arrays
 
 /** Determines the mode of I/O used for reading request bodies and writing response bodies.
   */

@@ -20,10 +20,9 @@ package servlet
 import cats.effect.kernel.Sync
 import cats.effect.std.Dispatcher
 import cats.syntax.all._
-import org.http4s.server._
-
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.http4s.server._
 
 class BlockingHttp4sServlet[F[_]] private (
     service: HttpApp[F],

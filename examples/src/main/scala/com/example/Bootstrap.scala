@@ -19,12 +19,11 @@ package com.example
 import cats.effect.IO
 import cats.effect.std.Dispatcher
 import cats.effect.unsafe.implicits.global
-import org.http4s._
-import org.http4s.servlet.syntax._
-
 import jakarta.servlet.ServletContextEvent
 import jakarta.servlet.ServletContextListener
 import jakarta.servlet.annotation.WebListener
+import org.http4s._
+import org.http4s.servlet.syntax._
 
 @WebListener
 /** 1. To start from sbt: `examples/Jetty/start`

@@ -22,6 +22,11 @@ import cats.syntax.all._
 import com.comcast.ip4s.IpAddress
 import com.comcast.ip4s.Port
 import com.comcast.ip4s.SocketAddress
+import jakarta.servlet.ServletConfig
+import jakarta.servlet.http.HttpServlet
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpSession
 import org.http4s._
 import org.http4s.internal.CollectionCompat.CollectionConverters._
 import org.http4s.server.SecureSession
@@ -32,11 +37,6 @@ import org.typelevel.ci._
 import org.typelevel.vault._
 
 import java.security.cert.X509Certificate
-import jakarta.servlet.ServletConfig
-import jakarta.servlet.http.HttpServlet
-import jakarta.servlet.http.HttpServletRequest
-import jakarta.servlet.http.HttpServletResponse
-import jakarta.servlet.http.HttpSession
 
 abstract class Http4sServlet[F[_]](
     service: HttpApp[F],

@@ -18,12 +18,12 @@ package org.http4s
 package servlet
 
 import cats.effect._
-import org.http4s.server.ServerBuilder
-
-import java.util
 import jakarta.servlet.DispatcherType
 import jakarta.servlet.http.HttpFilter
 import jakarta.servlet.http.HttpServlet
+import org.http4s.server.ServerBuilder
+
+import java.util
 
 abstract class ServletContainer[F[_]] extends ServerBuilder[F] {
   type Self <: ServletContainer[F]

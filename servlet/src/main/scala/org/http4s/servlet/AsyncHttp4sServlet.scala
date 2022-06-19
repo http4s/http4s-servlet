@@ -21,11 +21,11 @@ import cats.effect.kernel.Async
 import cats.effect.kernel.Deferred
 import cats.effect.std.Dispatcher
 import cats.syntax.all._
-import org.http4s.server._
-
 import jakarta.servlet._
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.http4s.server._
+
 import scala.concurrent.duration.Duration
 
 class AsyncHttp4sServlet[F[_]](
