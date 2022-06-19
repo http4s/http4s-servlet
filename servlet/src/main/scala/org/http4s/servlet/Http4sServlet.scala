@@ -28,15 +28,15 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.servlet.http.HttpSession
 import org.http4s._
-import org.http4s.internal.CollectionCompat.CollectionConverters._
+import org.http4s.headers.`Transfer-Encoding`
 import org.http4s.server.SecureSession
 import org.http4s.server.ServerRequestKeys
 import org.log4s.Logger
 import org.log4s.getLogger
-import org.typelevel.ci._
 import org.typelevel.vault._
 
 import java.security.cert.X509Certificate
+import scala.jdk.CollectionConverters._
 
 abstract class Http4sServlet[F[_]](
     service: HttpApp[F],
@@ -90,15 +90,21 @@ abstract class Http4sServlet[F[_]](
     // your effect isn't Concurrent.
     F.delay {
       servletResponse.setStatus(response.status.code)
-      for (header <- response.headers.headers if header.name != ci"Transfer-Encoding")
+      for (header <- response.headers.headers if header.name != `Transfer-Encoding`.name)
         servletResponse.addHeader(header.name.toString, header.value)
     }.attempt
       .flatMap {
         case Right(()) => bodyWriter(response)
         case Left(t) =>
-          response.body.compile.drain.handleError { t2 =>
-            logger.error(t2)("Error draining body")
-          } *> F.raiseError(t)
+          response.entity match {
+            case Entity.Default(body, _) =>
+              body.compile.drain.handleError { t2 =>
+                logger.error(t2)("Error draining body")
+              } *> F.raiseError(t)
+
+            case Entity.Strict(_) | Entity.Empty =>
+              F.raiseError(t)
+          }
       }
 
   protected def toRequest(req: HttpServletRequest): ParseResult[Request[F]] =
@@ -154,7 +160,7 @@ abstract class Http4sServlet[F[_]](
       uri = uri,
       httpVersion = version,
       headers = toHeaders(req),
-      body = servletIo.requestBody(req, dispatcher),
+      entity = Entity(servletIo.requestBody(req, dispatcher)),
       attributes = attributes,
     )
 
