@@ -39,11 +39,14 @@ final case class HttpServletRequestStub(
   def getParts(): java.util.Collection[jakarta.servlet.http.Part] = ???
   def getPathInfo(): String = ???
   def getPathTranslated(): String = ???
+  def getProtocolRequestId(): String = ???
   def getQueryString(): String = ???
   def getRemoteUser(): String = ???
+  def getRequestId(): String = ???
   def getRequestURI(): String = ???
   def getRequestURL(): StringBuffer = ???
   def getRequestedSessionId(): String = ???
+  def getServletConnection(): jakarta.servlet.ServletConnection = ???
   def getServletPath(): String = ???
   def getSession(): jakarta.servlet.http.HttpSession = ???
   def getSession(x$1: Boolean): jakarta.servlet.http.HttpSession = ???
