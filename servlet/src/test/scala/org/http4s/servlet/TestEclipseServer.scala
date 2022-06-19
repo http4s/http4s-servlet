@@ -18,14 +18,13 @@ package org.http4s.servlet
 
 import cats.effect.IO
 import cats.effect.Resource
+import jakarta.servlet.Servlet
 import org.eclipse.jetty.server.HttpConfiguration
 import org.eclipse.jetty.server.HttpConnectionFactory
 import org.eclipse.jetty.server.ServerConnector
 import org.eclipse.jetty.server.{Server => EclipseServer}
 import org.eclipse.jetty.servlet.ServletContextHandler
 import org.eclipse.jetty.servlet.ServletHolder
-
-import jakarta.servlet.Servlet
 
 object TestEclipseServer {
 
