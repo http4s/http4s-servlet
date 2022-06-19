@@ -138,7 +138,7 @@ final case class NonBlockingServletIo[F[_]](chunkSize: Int)(implicit F: Async[F]
 
           def unsafeRunAndForget[A](fa: F[A]): Unit =
             dispatcher.unsafeRunAndForget(
-              fa.onError(t => F.delay(logger.error(t)("Error in servlet read listener")))
+              fa.onError { case t => F.delay(logger.error(t)("Error in servlet read listener")) }
             )
         })))
 
@@ -208,7 +208,7 @@ final case class NonBlockingServletIo[F[_]](chunkSize: Int)(implicit F: Async[F]
 
             def unsafeRunAndForget[A](fa: F[A]): Unit =
               dispatcher.unsafeRunAndForget(
-                fa.onError(t => F.delay(logger.error(t)("Error in servlet write listener")))
+                fa.onError { case t => F.delay(logger.error(t)("Error in servlet write listener")) }
               )
           }))
 
