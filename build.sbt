@@ -1,5 +1,5 @@
 // https://typelevel.org/sbt-typelevel/faq.html#what-is-a-base-version-anyway
-ThisBuild / tlBaseVersion := "0.25" // your current series x.y
+ThisBuild / tlBaseVersion := "0.26" // your current series x.y
 
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / developers := List(
@@ -14,9 +14,8 @@ val Scala213 = "2.13.8"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.1.2")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 
-// Jetty 10+, for testing, requires Java 11.
+// Jakarta EE 10 requires Java 11
 ThisBuild / githubWorkflowJavaVersions -= JavaSpec.temurin("8")
-ThisBuild / tlJdkRelease := Some(8)
 
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
