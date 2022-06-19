@@ -1,5 +1,5 @@
 // https://typelevel.org/sbt-typelevel/faq.html#what-is-a-base-version-anyway
-ThisBuild / tlBaseVersion := "0.24" // your current series x.y
+ThisBuild / tlBaseVersion := "0.25" // your current series x.y
 
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / developers := List(
@@ -21,10 +21,10 @@ ThisBuild / tlJdkRelease := Some(8)
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.12.3"
-val jettyVersion = "10.0.9"
+val jettyVersion = "11.0.9"
 val http4sVersion = "0.23.12"
 val munitCatsEffectVersion = "1.0.7"
-val servletApiVersion = "4.0.1"
+val servletApiVersion = "5.0.0"
 
 lazy val servlet = project
   .in(file("servlet"))
@@ -33,7 +33,7 @@ lazy val servlet = project
     description := "Portable servlet implementation for http4s servers",
     startYear := Some(2013),
     libraryDependencies ++= Seq(
-      "javax.servlet" % "javax.servlet-api" % servletApiVersion % Provided,
+      "jakarta.servlet" % "jakarta.servlet-api" % servletApiVersion % Provided,
       "org.eclipse.jetty" % "jetty-client" % jettyVersion % Test,
       "org.eclipse.jetty" % "jetty-server" % jettyVersion % Test,
       "org.eclipse.jetty" % "jetty-servlet" % jettyVersion % Test,
@@ -54,7 +54,7 @@ lazy val examples = project
     fork := true,
     Jetty / containerLibs := List("org.eclipse.jetty" % "jetty-runner" % jettyVersion),
     libraryDependencies ++= Seq(
-      "javax.servlet" % "javax.servlet-api" % servletApiVersion % Provided
+      "jakarta.servlet" % "jakarta.servlet-api" % servletApiVersion % Provided
     ),
   )
   .dependsOn(servlet)
