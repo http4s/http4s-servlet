@@ -135,7 +135,9 @@ abstract class Http4sServlet[F[_]](
           .insert(
             ServerRequestKeys.SecureSession,
             (
-              Option(req.getAttribute("jakarta.servlet.request.ssl_session_id").asInstanceOf[String]),
+              Option(
+                req.getAttribute("jakarta.servlet.request.ssl_session_id").asInstanceOf[String]
+              ),
               Option(req.getAttribute("jakarta.servlet.request.cipher_suite").asInstanceOf[String]),
               Option(req.getAttribute("jakarta.servlet.request.key_size").asInstanceOf[Int]),
               Option(
