@@ -28,14 +28,14 @@ import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 import scala.concurrent.duration.Duration
 
-class AsyncHttp4sServlet[F[_]](
-    service: HttpApp[F],
-    asyncTimeout: Duration = Duration.Inf,
+class AsyncHttp4sServlet[F[_]] private[servlet] (
+    httpApp: HttpApp[F],
+    asyncTimeout: Duration,
     servletIo: ServletIo[F],
     serviceErrorHandler: ServiceErrorHandler[F],
     dispatcher: Dispatcher[F],
 )(implicit F: Async[F])
-    extends Http4sServlet[F](service, servletIo, dispatcher) {
+    extends Http4sServlet[F](httpApp, servletIo, dispatcher) {
   private val asyncTimeoutMillis =
     if (asyncTimeout.isFinite) asyncTimeout.toMillis else -1 // -1 == Inf
 
@@ -131,16 +131,83 @@ class AsyncHttp4sServlet[F[_]](
 }
 
 object AsyncHttp4sServlet {
+
+  /** A builder for an Http4sServlet.
+    *
+    * @tparam F the effect type of the servlet
+    * @tparam S the state of the builder.  After [[withHttpApp]] and
+    * [[withDispatcher]] are called, the state reaches
+    * [[Builder.State.Complete]], and the servlet can be built.
+    */
+  class Builder[F[_], S <: Builder.State] private[AsyncHttp4sServlet] (
+      httpApp: Option[HttpApp[F]],
+      dispatcher: Option[Dispatcher[F]],
+      asyncTimeout: Option[Duration],
+      chunkSize: Option[Int],
+  ) {
+    import Builder.State._
+
+    def copy[S2 <: S](
+        httpApp: Option[HttpApp[F]] = httpApp,
+        dispatcher: Option[Dispatcher[F]] = dispatcher,
+        asyncTimeout: Option[Duration] = asyncTimeout,
+        chunkSize: Option[Int] = chunkSize,
+    ): Builder[F, S2] =
+      new Builder[F, S2](
+        httpApp,
+        dispatcher,
+        asyncTimeout,
+        chunkSize,
+      ) {}
+
+    /** Builds the servlet.  Requires that [[withHttpApp]] and
+      * [[withDispatcher]] were called first.
+      */
+    def build(implicit F: Async[F], ev: S =:= Complete): AsyncHttp4sServlet[F] =
+      new AsyncHttp4sServlet(
+        httpApp.get,
+        asyncTimeout.getOrElse(Duration.Inf),
+        NonBlockingServletIo(chunkSize.getOrElse(DefaultChunkSize)),
+        DefaultServiceErrorHandler,
+        dispatcher.get,
+      )
+
+    def withHttpApp(httpApp: HttpApp[F]): Builder[F, S with HasHttpApp] =
+      copy(httpApp = Some(httpApp))
+
+    def withDispatcher(dispatcher: Dispatcher[F]): Builder[F, S with HasDispatcher] =
+      copy(dispatcher = Some(dispatcher))
+
+    def withAsyncTimeout(asyncTimeout: Duration): Builder[F, S] =
+      copy(asyncTimeout = Some(asyncTimeout))
+
+    def withChunkSize(chunkSize: Int): Builder[F, S] =
+      copy(chunkSize = Some(chunkSize))
+  }
+
+  object Builder {
+    sealed trait State
+    object State {
+      sealed trait Init extends State
+      sealed trait HasHttpApp extends State
+      sealed trait HasDispatcher extends State
+      type Complete = Init with HasHttpApp with HasDispatcher
+    }
+  }
+
+  def builder[F[_]]: Builder[F, Builder.State.Init] =
+    new Builder[F, Builder.State.Init](None, None, None, None) {}
+
+  @deprecated("Use `builder`.  `service` is renamed to `httpApp`.", "0.22.13")
   def apply[F[_]: Async](
       service: HttpApp[F],
       asyncTimeout: Duration = Duration.Inf,
       dispatcher: Dispatcher[F],
   ): AsyncHttp4sServlet[F] =
-    new AsyncHttp4sServlet[F](
-      service,
-      asyncTimeout,
-      NonBlockingServletIo[F](DefaultChunkSize),
-      DefaultServiceErrorHandler,
-      dispatcher,
-    )
+    AsyncHttp4sServlet
+      .builder[F]
+      .withHttpApp(service)
+      .withAsyncTimeout(asyncTimeout)
+      .withDispatcher(dispatcher)
+      .build
 }
