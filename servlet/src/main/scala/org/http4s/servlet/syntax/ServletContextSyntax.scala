@@ -20,7 +20,6 @@ package syntax
 
 import cats.effect._
 import cats.effect.std.Dispatcher
-import org.http4s.server.DefaultServiceErrorHandler
 import org.http4s.server.defaults
 import org.http4s.syntax.all._
 
@@ -73,13 +72,10 @@ final class ServletContextOps private[syntax] (val self: ServletContext) extends
       dispatcher: Dispatcher[F],
       asyncTimeout: Duration = defaults.ResponseTimeout,
   ): ServletRegistration.Dynamic = {
-    val servlet = new AsyncHttp4sServlet(
-      service = service,
-      asyncTimeout = asyncTimeout,
-      servletIo = NonBlockingServletIo(DefaultChunkSize),
-      serviceErrorHandler = DefaultServiceErrorHandler[F],
-      dispatcher,
-    )
+    val servlet = AsyncHttp4sServlet
+      .builder[F](service, dispatcher)
+      .withAsyncTimeout(asyncTimeout)
+      .build
     val reg = self.addServlet(name, servlet)
     reg.setLoadOnStartup(1)
     reg.setAsyncSupported(true)
