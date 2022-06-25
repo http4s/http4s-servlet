@@ -26,11 +26,12 @@ import org.http4s.server._
 import javax.servlet._
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
+import scala.annotation.nowarn
 import scala.concurrent.duration.Duration
 
-class AsyncHttp4sServlet[F[_]] private[servlet] (
+class AsyncHttp4sServlet[F[_]] @deprecated("Use AsyncHttp4sServlet.builder", "0.23.12") (
     httpApp: HttpApp[F],
-    asyncTimeout: Duration,
+    asyncTimeout: Duration = Duration.Inf,
     servletIo: ServletIo[F],
     serviceErrorHandler: ServiceErrorHandler[F],
     dispatcher: Dispatcher[F],
@@ -151,6 +152,7 @@ object AsyncHttp4sServlet {
         chunkSize,
       ) {}
 
+    @nowarn("cat=deprecation")
     def build(implicit F: Async[F]): AsyncHttp4sServlet[F] =
       new AsyncHttp4sServlet(
         httpApp,
