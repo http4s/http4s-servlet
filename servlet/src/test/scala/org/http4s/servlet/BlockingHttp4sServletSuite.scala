@@ -24,7 +24,6 @@ import cats.effect.std.Dispatcher
 import cats.syntax.all._
 import munit.CatsEffectSuite
 import org.http4s.dsl.io._
-import org.http4s.server.DefaultServiceErrorHandler
 import org.http4s.syntax.all._
 
 import java.net.HttpURLConnection
@@ -92,10 +91,6 @@ class BlockingHttp4sServletSuite extends CatsEffectSuite {
     get(server, "shifted").assertEquals("shifted")
   }
 
-  private def servlet(dispatcher: Dispatcher[IO]) = new BlockingHttp4sServlet[IO](
-    service = service,
-    servletIo = org.http4s.servlet.BlockingServletIo(4096),
-    serviceErrorHandler = DefaultServiceErrorHandler,
-    dispatcher = dispatcher,
-  )
+  private def servlet(dispatcher: Dispatcher[IO]) =
+    BlockingHttp4sServlet.builder[IO](service, dispatcher).build
 }
