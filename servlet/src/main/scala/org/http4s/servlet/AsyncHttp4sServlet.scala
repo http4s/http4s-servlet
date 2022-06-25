@@ -29,7 +29,7 @@ import javax.servlet.http.HttpServletResponse
 import scala.annotation.nowarn
 import scala.concurrent.duration.Duration
 
-class AsyncHttp4sServlet[F[_]] @deprecated("Use AsyncHttp4sServlet.builder", "0.23.12") (
+class AsyncHttp4sServlet[F[_]] @deprecated("Use AsyncHttp4sServlet.builder", "0.23.13") (
     httpApp: HttpApp[F],
     asyncTimeout: Duration = Duration.Inf,
     servletIo: ServletIo[F],
