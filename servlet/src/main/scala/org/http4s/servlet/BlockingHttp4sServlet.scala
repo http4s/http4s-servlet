@@ -23,6 +23,7 @@ import cats.effect.std.Dispatcher
 import cats.syntax.all._
 import org.http4s.server._
 
+import scala.annotation.nowarn
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
@@ -34,6 +35,7 @@ class BlockingHttp4sServlet[F[_]] private (
 )(implicit F: Sync[F])
     extends Http4sServlet[F](service, servletIo, dispatcher) {
 
+  @deprecated("Use BlockingHttp4sServlet.builder", "0.23.13")
   def this(
       service: HttpApp[F],
       servletIo: BlockingServletIo[F],
@@ -97,12 +99,55 @@ class BlockingHttp4sServlet[F[_]] private (
 }
 
 object BlockingHttp4sServlet {
-  def apply[F[_]: Sync](
+
+  class Builder[F[_]] private[BlockingHttp4sServlet] (
+      httpApp: HttpApp[F],
+      dispatcher: Dispatcher[F],
+      chunkSize: Option[Int],
+  ) {
+    private def copy(
+        httpApp: HttpApp[F] = httpApp,
+        dispatcher: Dispatcher[F] = dispatcher,
+        chunkSize: Option[Int] = chunkSize,
+    ): Builder[F] =
+      new Builder[F](
+        httpApp,
+        dispatcher,
+        chunkSize,
+      ) {}
+
+    @nowarn("cat=deprecation")
+    def build(implicit F: Async[F]): BlockingHttp4sServlet[F] =
+      new BlockingHttp4sServlet(
+        httpApp,
+        BlockingServletIo(chunkSize.getOrElse(DefaultChunkSize)),
+        DefaultServiceErrorHandler,
+        dispatcher,
+      )
+
+    def withHttpApp(httpApp: HttpApp[F]): Builder[F] =
+      copy(httpApp = httpApp)
+
+    def withDispatcher(dispatcher: Dispatcher[F]): Builder[F] =
+      copy(dispatcher = dispatcher)
+
+    def withChunkSize(chunkSize: Int): Builder[F] =
+      copy(chunkSize = Some(chunkSize))
+  }
+
+  def builder[F[_]](httpApp: HttpApp[F], dispatcher: Dispatcher[F]): Builder[F] =
+    new Builder[F](httpApp, dispatcher, None) {}
+
+  @deprecated(
+    "Use `builder` instead",
+    "0.23.13",
+  )
+  def apply[F[_]](
       service: HttpApp[F],
       servletIo: ServletIo[F],
       dispatcher: Dispatcher[F],
-  ): BlockingHttp4sServlet[F] =
-    new BlockingHttp4sServlet[F](
+  )(implicit F: Sync[F]): BlockingHttp4sServlet[F] =
+    new BlockingHttp4sServlet(
       service,
       servletIo,
       DefaultServiceErrorHandler,
@@ -110,7 +155,7 @@ object BlockingHttp4sServlet {
     )
 
   @deprecated(
-    "Preserved for binary compatibility.  Use the overload with the implicit Sync",
+    "Use `builder` instead",
     "0.23.12",
   )
   def apply[F[_]](
@@ -119,5 +164,11 @@ object BlockingHttp4sServlet {
       dispatcher: Dispatcher[F],
       async: Async[F],
   ): BlockingHttp4sServlet[F] =
-    apply(service, servletIo, dispatcher)(async: Sync[F])
+    new BlockingHttp4sServlet(
+      service,
+      servletIo,
+      DefaultServiceErrorHandler(async),
+      dispatcher,
+      async,
+    )
 }
