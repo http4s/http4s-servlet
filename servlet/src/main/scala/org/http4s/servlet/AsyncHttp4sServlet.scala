@@ -26,16 +26,17 @@ import org.http4s.server._
 import javax.servlet._
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
+import scala.annotation.nowarn
 import scala.concurrent.duration.Duration
 
-class AsyncHttp4sServlet[F[_]](
-    service: HttpApp[F],
+class AsyncHttp4sServlet[F[_]] @deprecated("Use AsyncHttp4sServlet.builder", "0.23.14") (
+    httpApp: HttpApp[F],
     asyncTimeout: Duration = Duration.Inf,
     servletIo: ServletIo[F],
     serviceErrorHandler: ServiceErrorHandler[F],
     dispatcher: Dispatcher[F],
 )(implicit F: Async[F])
-    extends Http4sServlet[F](service, servletIo, dispatcher) {
+    extends Http4sServlet[F](httpApp, servletIo, dispatcher) {
   private val asyncTimeoutMillis =
     if (asyncTimeout.isFinite) asyncTimeout.toMillis else -1 // -1 == Inf
 
@@ -131,16 +132,60 @@ class AsyncHttp4sServlet[F[_]](
 }
 
 object AsyncHttp4sServlet {
+
+  class Builder[F[_]] private[AsyncHttp4sServlet] (
+      httpApp: HttpApp[F],
+      dispatcher: Dispatcher[F],
+      asyncTimeout: Option[Duration],
+      chunkSize: Option[Int],
+  ) {
+    private def copy(
+        httpApp: HttpApp[F] = httpApp,
+        dispatcher: Dispatcher[F] = dispatcher,
+        asyncTimeout: Option[Duration] = asyncTimeout,
+        chunkSize: Option[Int] = chunkSize,
+    ): Builder[F] =
+      new Builder[F](
+        httpApp,
+        dispatcher,
+        asyncTimeout,
+        chunkSize,
+      ) {}
+
+    @nowarn("cat=deprecation")
+    def build(implicit F: Async[F]): AsyncHttp4sServlet[F] =
+      new AsyncHttp4sServlet(
+        httpApp,
+        asyncTimeout.getOrElse(Duration.Inf),
+        NonBlockingServletIo(chunkSize.getOrElse(DefaultChunkSize)),
+        DefaultServiceErrorHandler,
+        dispatcher,
+      )
+
+    def withHttpApp(httpApp: HttpApp[F]): Builder[F] =
+      copy(httpApp = httpApp)
+
+    def withDispatcher(dispatcher: Dispatcher[F]): Builder[F] =
+      copy(dispatcher = dispatcher)
+
+    def withAsyncTimeout(asyncTimeout: Duration): Builder[F] =
+      copy(asyncTimeout = Some(asyncTimeout))
+
+    def withChunkSize(chunkSize: Int): Builder[F] =
+      copy(chunkSize = Some(chunkSize))
+  }
+
+  def builder[F[_]](httpApp: HttpApp[F], dispatcher: Dispatcher[F]): Builder[F] =
+    new Builder[F](httpApp, dispatcher, None, None) {}
+
+  @deprecated("Use `builder`.  `service` is renamed to `httpApp`.", "0.22.13")
   def apply[F[_]: Async](
       service: HttpApp[F],
       asyncTimeout: Duration = Duration.Inf,
       dispatcher: Dispatcher[F],
   ): AsyncHttp4sServlet[F] =
-    new AsyncHttp4sServlet[F](
-      service,
-      asyncTimeout,
-      NonBlockingServletIo[F](DefaultChunkSize),
-      DefaultServiceErrorHandler,
-      dispatcher,
-    )
+    AsyncHttp4sServlet
+      .builder[F](service, dispatcher)
+      .withAsyncTimeout(asyncTimeout)
+      .build
 }
