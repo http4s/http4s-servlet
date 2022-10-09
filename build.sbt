@@ -19,13 +19,13 @@ ThisBuild / developers := List(
 ThisBuild / tlSitePublishBranch := Some("main")
 
 val Scala213 = "2.13.8"
-ThisBuild / crossScalaVersions := Seq("2.12.16", Scala213, "3.1.3")
+ThisBuild / crossScalaVersions := Seq("2.12.16", Scala213, "3.2.0")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.12.3"
-val jettyVersion = "9.4.48.v20220622"
+val jettyVersion = "9.4.49.v20220914"
 val http4sVersion = "0.23.14"
 val munitCatsEffectVersion = "1.0.7"
 val servletApiVersion = "3.1.0"
