@@ -22,7 +22,6 @@ import cats.effect.std.Dispatcher
 import munit.CatsEffectSuite
 import org.http4s.HttpRoutes
 import org.http4s.dsl.io._
-import org.http4s.server.DefaultServiceErrorHandler
 import org.http4s.server.Router
 
 import java.net.URL
@@ -46,22 +45,28 @@ class RouterInServletSuite extends CatsEffectSuite {
   )
 
   private val serverWithoutRouter =
-    ResourceFixture[Int](Dispatcher[IO].flatMap(d => mkServer(mainRoutes, dispatcher = d)))
+    ResourceFixture[Int](Dispatcher.parallel[IO].flatMap(d => mkServer(mainRoutes, dispatcher = d)))
   private val server =
-    ResourceFixture[Int](Dispatcher[IO].flatMap(d => mkServer(router, dispatcher = d)))
+    ResourceFixture[Int](Dispatcher.parallel[IO].flatMap(d => mkServer(router, dispatcher = d)))
   private val serverWithContextPath =
     ResourceFixture[Int](
-      Dispatcher[IO].flatMap(d => mkServer(router, contextPath = "/context", dispatcher = d))
+      Dispatcher
+        .parallel[IO]
+        .flatMap(d => mkServer(router, contextPath = "/context", dispatcher = d))
     )
   private val serverWithServletPath =
     ResourceFixture[Int](
-      Dispatcher[IO].flatMap(d => mkServer(router, servletPath = "/servlet/*", dispatcher = d))
+      Dispatcher
+        .parallel[IO]
+        .flatMap(d => mkServer(router, servletPath = "/servlet/*", dispatcher = d))
     )
   private val serverWithContextAndServletPath =
     ResourceFixture[Int](
-      Dispatcher[IO].flatMap(d =>
-        mkServer(router, contextPath = "/context", servletPath = "/servlet/*", dispatcher = d)
-      )
+      Dispatcher
+        .parallel[IO]
+        .flatMap(d =>
+          mkServer(router, contextPath = "/context", servletPath = "/servlet/*", dispatcher = d)
+        )
     )
 
   serverWithoutRouter.test(
@@ -137,11 +142,8 @@ class RouterInServletSuite extends CatsEffectSuite {
   ): Resource[IO, Int] = TestEclipseServer(servlet(routes, dispatcher), contextPath, servletPath)
 
   private def servlet(routes: HttpRoutes[IO], dispatcher: Dispatcher[IO]) =
-    new AsyncHttp4sServlet[IO](
-      service = routes.orNotFound,
-      servletIo = org.http4s.servlet.BlockingServletIo(4096),
-      serviceErrorHandler = DefaultServiceErrorHandler,
-      dispatcher = dispatcher,
-    )
+    AsyncHttp4sServlet
+      .builder[IO](routes.orNotFound, dispatcher)
+      .build
 
 }

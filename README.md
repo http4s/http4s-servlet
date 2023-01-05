@@ -8,7 +8,7 @@ Runs http4s apps as Java servlets.  Provides components for the [http4s-jetty][h
 
 ```scala
 libraryDependencies ++= Seq(
-  "org.http4s" %% "http4s-servlet" % http4sScalatagsV
+  "org.http4s" %% "http4s-servlet" % http4sServletV
 )
 ```
 
