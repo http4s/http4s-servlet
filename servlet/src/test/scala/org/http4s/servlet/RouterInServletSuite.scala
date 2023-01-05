@@ -45,22 +45,28 @@ class RouterInServletSuite extends CatsEffectSuite {
   )
 
   private val serverWithoutRouter =
-    ResourceFixture[Int](Dispatcher[IO].flatMap(d => mkServer(mainRoutes, dispatcher = d)))
+    ResourceFixture[Int](Dispatcher.parallel[IO].flatMap(d => mkServer(mainRoutes, dispatcher = d)))
   private val server =
-    ResourceFixture[Int](Dispatcher[IO].flatMap(d => mkServer(router, dispatcher = d)))
+    ResourceFixture[Int](Dispatcher.parallel[IO].flatMap(d => mkServer(router, dispatcher = d)))
   private val serverWithContextPath =
     ResourceFixture[Int](
-      Dispatcher[IO].flatMap(d => mkServer(router, contextPath = "/context", dispatcher = d))
+      Dispatcher
+        .parallel[IO]
+        .flatMap(d => mkServer(router, contextPath = "/context", dispatcher = d))
     )
   private val serverWithServletPath =
     ResourceFixture[Int](
-      Dispatcher[IO].flatMap(d => mkServer(router, servletPath = "/servlet/*", dispatcher = d))
+      Dispatcher
+        .parallel[IO]
+        .flatMap(d => mkServer(router, servletPath = "/servlet/*", dispatcher = d))
     )
   private val serverWithContextAndServletPath =
     ResourceFixture[Int](
-      Dispatcher[IO].flatMap(d =>
-        mkServer(router, contextPath = "/context", servletPath = "/servlet/*", dispatcher = d)
-      )
+      Dispatcher
+        .parallel[IO]
+        .flatMap(d =>
+          mkServer(router, contextPath = "/context", servletPath = "/servlet/*", dispatcher = d)
+        )
     )
 
   serverWithoutRouter.test(

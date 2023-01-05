@@ -57,7 +57,7 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
     .orNotFound
 
   private val servletServer =
-    ResourceFixture[Int](Dispatcher[IO].flatMap(d => TestEclipseServer(servlet(d))))
+    ResourceFixture[Int](Dispatcher.parallel[IO].flatMap(d => TestEclipseServer(servlet(d))))
 
   private def get(client: HttpClient, serverPort: Int, path: String): IO[String] =
     IO.blocking(
@@ -134,7 +134,8 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
   servletServer.test("AsyncHttp4sServlet handle two-chunk, deferred POST") { server =>
     // Show that we can read, be blocked, and read again
     val bytes = Stream.range(0, DefaultChunkSize).map(_.toByte).to(Array)
-    Dispatcher[IO]
+    Dispatcher
+      .parallel[IO]
       .use { dispatcher =>
         clientR.use { client =>
           for {
@@ -174,7 +175,8 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
 
   // We shouldn't block when we receive less than a chunk at a time
   servletServer.test("AsyncHttp4sServlet handle two itsy-bitsy deferred chunk POST") { server =>
-    Dispatcher[IO]
+    Dispatcher
+      .parallel[IO]
       .use { dispatcher =>
         clientR.use { client =>
           for {
@@ -214,7 +216,8 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
 
   servletServer.test("AsyncHttp4sServlet should not reorder lots of itsy-bitsy chunks") { server =>
     val body = (0 until 4096).map(_.toByte).toArray
-    Dispatcher[IO]
+    Dispatcher
+      .parallel[IO]
       .use { dispatcher =>
         clientR.use { client =>
           for {
