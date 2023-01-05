@@ -31,7 +31,6 @@ import org.eclipse.jetty.client.api.{Response => JResponse}
 import org.eclipse.jetty.client.util.AsyncRequestContent
 import org.eclipse.jetty.client.util.BytesRequestContent
 import org.http4s.dsl.io._
-import org.http4s.server.DefaultServiceErrorHandler
 import org.http4s.syntax.all._
 
 import java.nio.ByteBuffer
@@ -255,10 +254,9 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
     clientR.use(get(_, server, "shifted")).assertEquals("shifted")
   }
 
-  private def servlet(dispatcher: Dispatcher[IO]) = new AsyncHttp4sServlet[IO](
-    service = service,
-    servletIo = NonBlockingServletIo[IO](DefaultChunkSize),
-    serviceErrorHandler = DefaultServiceErrorHandler[IO],
-    dispatcher = dispatcher,
-  )
+  private def servlet(dispatcher: Dispatcher[IO]) =
+    AsyncHttp4sServlet
+      .builder[IO](service, dispatcher)
+      .withChunkSize(DefaultChunkSize)
+      .build
 }

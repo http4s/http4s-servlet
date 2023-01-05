@@ -22,7 +22,6 @@ import cats.effect.std.Dispatcher
 import munit.CatsEffectSuite
 import org.http4s.HttpRoutes
 import org.http4s.dsl.io._
-import org.http4s.server.DefaultServiceErrorHandler
 import org.http4s.server.Router
 
 import java.net.URL
@@ -137,11 +136,8 @@ class RouterInServletSuite extends CatsEffectSuite {
   ): Resource[IO, Int] = TestEclipseServer(servlet(routes, dispatcher), contextPath, servletPath)
 
   private def servlet(routes: HttpRoutes[IO], dispatcher: Dispatcher[IO]) =
-    new AsyncHttp4sServlet[IO](
-      service = routes.orNotFound,
-      servletIo = org.http4s.servlet.BlockingServletIo(4096),
-      serviceErrorHandler = DefaultServiceErrorHandler,
-      dispatcher = dispatcher,
-    )
+    AsyncHttp4sServlet
+      .builder[IO](routes.orNotFound, dispatcher)
+      .build
 
 }
