@@ -39,7 +39,9 @@ class Bootstrap extends ServletContextListener {
   @volatile private var shutdown: IO[Unit] = IO.unit
 
   override def contextInitialized(sce: ServletContextEvent): Unit = {
-    Dispatcher[IO].allocated
+    Dispatcher
+      .parallel[IO]
+      .allocated
       .flatMap { case (dispatcher, shutdown) =>
         IO(this.shutdown = shutdown) *>
           IO(sce.getServletContext.mountRoutes("example", routes, dispatcher = dispatcher))

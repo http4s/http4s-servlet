@@ -10,8 +10,8 @@ ThisBuild / developers := List(
 // publish website from this branch
 ThisBuild / tlSitePublishBranch := Some("main")
 
-val Scala213 = "2.13.8"
-ThisBuild / crossScalaVersions := Seq(Scala213, "3.1.2")
+val Scala213 = "2.13.10"
+ThisBuild / crossScalaVersions := Seq(Scala213, "3.2.1")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 
 // Jetty 10+, for testing, requires Java 11.
@@ -21,8 +21,8 @@ ThisBuild / tlJdkRelease := Some(8)
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.12.3"
-val jettyVersion = "11.0.9"
-val http4sVersion = "1.0.0-M34"
+val jettyVersion = "11.0.13"
+val http4sVersion = "1.0.0-M38"
 val munitCatsEffectVersion = "1.0.7"
 val servletApiVersion = "5.0.0"
 
