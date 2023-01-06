@@ -23,9 +23,9 @@ import cats.effect.std.Dispatcher
 import cats.syntax.all._
 import org.http4s.server._
 
-import scala.annotation.nowarn
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
+import scala.annotation.nowarn
 
 class BlockingHttp4sServlet[F[_]] private (
     service: HttpApp[F],
