@@ -35,7 +35,7 @@ class BlockingHttp4sServlet[F[_]] private (
 )(implicit F: Sync[F])
     extends Http4sServlet[F](service, servletIo, dispatcher) {
 
-  @deprecated("Use BlockingHttp4sServlet.builder", "0.23.13")
+  @deprecated("Use BlockingHttp4sServlet.builder", "0.24.0")
   def this(
       service: HttpApp[F],
       servletIo: BlockingServletIo[F],
@@ -43,16 +43,6 @@ class BlockingHttp4sServlet[F[_]] private (
       dispatcher: Dispatcher[F],
   )(implicit F: Sync[F]) =
     this(service, servletIo: ServletIo[F], serviceErrorHandler, dispatcher)(F)
-
-  @deprecated("Binary compatibility", "0.23.12")
-  private[servlet] def this(
-      service: HttpApp[F],
-      servletIo: ServletIo[F],
-      serviceErrorHandler: ServiceErrorHandler[F],
-      dispatcher: Dispatcher[F],
-      async: Async[F],
-  ) =
-    this(service, servletIo, serviceErrorHandler, dispatcher)(async: Sync[F])
 
   override def service(
       servletRequest: HttpServletRequest,
@@ -140,7 +130,7 @@ object BlockingHttp4sServlet {
 
   @deprecated(
     "Use `builder` instead",
-    "0.23.13",
+    "0.24.0",
   )
   def apply[F[_]](
       service: HttpApp[F],
