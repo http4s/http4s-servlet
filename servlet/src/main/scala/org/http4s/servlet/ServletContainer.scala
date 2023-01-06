@@ -22,7 +22,7 @@ import org.http4s.server.ServerBuilder
 
 import java.util
 import javax.servlet.DispatcherType
-import javax.servlet.Filter
+import javax.servlet.http.HttpFilter
 import javax.servlet.http.HttpServlet
 
 abstract class ServletContainer[F[_]] extends ServerBuilder[F] {
@@ -44,7 +44,7 @@ abstract class ServletContainer[F[_]] extends ServerBuilder[F] {
     * a servlet container.
     */
   def mountFilter(
-      filter: Filter,
+      filter: HttpFilter,
       urlMapping: String,
       name: Option[String] = None,
       dispatches: util.EnumSet[DispatcherType] = util.EnumSet.of(

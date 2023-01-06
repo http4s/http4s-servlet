@@ -1,13 +1,5 @@
 // https://typelevel.org/sbt-typelevel/faq.html#what-is-a-base-version-anyway
-ThisBuild / tlBaseVersion := "0.23" // your current series x.y
-ThisBuild / tlMimaPreviousVersions ++= (0 to 11).map(y => s"0.23.$y").toSet
-ThisBuild / tlMimaPreviousVersions := {
-  scalaBinaryVersion.value match {
-    case "2.12" =>
-      (ThisBuild / tlMimaPreviousVersions).value - "0.23.12" // we missed this one... oops
-    case _ => (ThisBuild / tlMimaPreviousVersions).value
-  }
-}
+ThisBuild / tlBaseVersion := "0.24" // your current series x.y
 
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / developers := List(
@@ -18,17 +10,21 @@ ThisBuild / developers := List(
 // publish website from this branch
 ThisBuild / tlSitePublishBranch := Some("main")
 
-val Scala213 = "2.13.8"
-ThisBuild / crossScalaVersions := Seq("2.12.16", Scala213, "3.1.3")
+val Scala213 = "2.13.10"
+ThisBuild / crossScalaVersions := Seq("2.12.17", Scala213, "3.2.1")
 ThisBuild / scalaVersion := Scala213 // the default Scala
+
+// Jetty 10+, for testing, requires Java 11.
+ThisBuild / githubWorkflowJavaVersions -= JavaSpec.temurin("8")
+ThisBuild / tlJdkRelease := Some(8)
 
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.12.3"
-val jettyVersion = "9.4.47.v20220610"
-val http4sVersion = "0.23.12"
+val jettyVersion = "10.0.13"
+val http4sVersion = "0.23.17"
 val munitCatsEffectVersion = "1.0.7"
-val servletApiVersion = "3.1.0"
+val servletApiVersion = "4.0.1"
 
 lazy val servlet = project
   .in(file("servlet"))

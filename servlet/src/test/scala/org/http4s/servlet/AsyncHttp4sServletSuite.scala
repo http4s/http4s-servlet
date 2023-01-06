@@ -28,8 +28,8 @@ import fs2.Stream
 import munit.CatsEffectSuite
 import org.eclipse.jetty.client.HttpClient
 import org.eclipse.jetty.client.api.{Response => JResponse}
-import org.eclipse.jetty.client.util.BytesContentProvider
-import org.eclipse.jetty.client.util.DeferredContentProvider
+import org.eclipse.jetty.client.util.AsyncRequestContent
+import org.eclipse.jetty.client.util.BytesRequestContent
 import org.http4s.dsl.io._
 import org.http4s.syntax.all._
 
@@ -57,7 +57,7 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
     .orNotFound
 
   private val servletServer =
-    ResourceFixture[Int](Dispatcher[IO].flatMap(d => TestEclipseServer(servlet(d))))
+    ResourceFixture[Int](Dispatcher.parallel[IO].flatMap(d => TestEclipseServer(servlet(d))))
 
   private def get(client: HttpClient, serverPort: Int, path: String): IO[String] =
     IO.blocking(
@@ -89,7 +89,7 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
         IO.blocking(
           client
             .POST(s"http://127.0.0.1:$server/echo")
-            .content(new BytesContentProvider(bytes))
+            .body(new BytesRequestContent(bytes))
             .send()
         ).map(resp => Chunk.array(resp.getContent))
       }
@@ -102,13 +102,13 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
     clientR
       .use { client =>
         for {
-          content <- IO(new DeferredContentProvider())
+          content <- IO(new AsyncRequestContent())
           bodyFiber <- IO
             .async_[Chunk[Byte]] { cb =>
               var body = Chunk.empty[Byte]
               client
                 .POST(s"http://127.0.0.1:$server/echo")
-                .content(content)
+                .body(content)
                 .send(new JResponse.Listener {
                   override def onContent(resp: JResponse, bb: ByteBuffer) = {
                     val buf = new Array[Byte](bb.remaining())
@@ -134,18 +134,19 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
   servletServer.test("AsyncHttp4sServlet handle two-chunk, deferred POST") { server =>
     // Show that we can read, be blocked, and read again
     val bytes = Stream.range(0, DefaultChunkSize).map(_.toByte).to(Array)
-    Dispatcher[IO]
+    Dispatcher
+      .parallel[IO]
       .use { dispatcher =>
         clientR.use { client =>
           for {
-            content <- IO(new DeferredContentProvider())
+            content <- IO(new AsyncRequestContent())
             firstChunkReceived <- Deferred[IO, Unit]
             bodyFiber <- IO
               .async_[Chunk[Byte]] { cb =>
                 var body = Chunk.empty[Byte]
                 client
                   .POST(s"http://127.0.0.1:$server/echo")
-                  .content(content)
+                  .body(content)
                   .send(new JResponse.Listener {
                     override def onContent(resp: JResponse, bb: ByteBuffer) =
                       dispatcher.unsafeRunSync(for {
@@ -174,18 +175,19 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
 
   // We shouldn't block when we receive less than a chunk at a time
   servletServer.test("AsyncHttp4sServlet handle two itsy-bitsy deferred chunk POST") { server =>
-    Dispatcher[IO]
+    Dispatcher
+      .parallel[IO]
       .use { dispatcher =>
         clientR.use { client =>
           for {
-            content <- IO(new DeferredContentProvider())
+            content <- IO(new AsyncRequestContent())
             firstChunkReceived <- Deferred[IO, Unit]
             bodyFiber <- IO
               .async_[Chunk[Byte]] { cb =>
                 var body = Chunk.empty[Byte]
                 client
                   .POST(s"http://127.0.0.1:$server/echo")
-                  .content(content)
+                  .body(content)
                   .send(new JResponse.Listener {
                     override def onContent(resp: JResponse, bb: ByteBuffer) =
                       dispatcher.unsafeRunSync(for {
@@ -214,17 +216,18 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
 
   servletServer.test("AsyncHttp4sServlet should not reorder lots of itsy-bitsy chunks") { server =>
     val body = (0 until 4096).map(_.toByte).toArray
-    Dispatcher[IO]
+    Dispatcher
+      .parallel[IO]
       .use { dispatcher =>
         clientR.use { client =>
           for {
-            content <- IO(new DeferredContentProvider())
+            content <- IO(new AsyncRequestContent())
             bodyFiber <- IO
               .async_[Chunk[Byte]] { cb =>
                 var body = Chunk.empty[Byte]
                 client
                   .POST(s"http://127.0.0.1:$server/echo")
-                  .content(content)
+                  .body(content)
                   .send(new JResponse.Listener {
                     override def onContent(resp: JResponse, bb: ByteBuffer) =
                       dispatcher.unsafeRunSync(for {

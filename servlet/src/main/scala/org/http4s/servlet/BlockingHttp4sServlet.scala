@@ -17,7 +17,6 @@
 package org.http4s
 package servlet
 
-import cats.effect.kernel.Async
 import cats.effect.kernel.Sync
 import cats.effect.std.Dispatcher
 import cats.syntax.all._
@@ -142,23 +141,5 @@ object BlockingHttp4sServlet {
       servletIo,
       DefaultServiceErrorHandler,
       dispatcher,
-    )
-
-  @deprecated(
-    "Use `builder` instead",
-    "0.23.12",
-  )
-  def apply[F[_]](
-      service: HttpApp[F],
-      servletIo: ServletIo[F],
-      dispatcher: Dispatcher[F],
-      async: Async[F],
-  ): BlockingHttp4sServlet[F] =
-    new BlockingHttp4sServlet(
-      service,
-      servletIo,
-      DefaultServiceErrorHandler(async),
-      dispatcher,
-      async,
     )
 }
