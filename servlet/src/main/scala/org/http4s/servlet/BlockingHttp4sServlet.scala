@@ -106,7 +106,7 @@ object BlockingHttp4sServlet {
       ) {}
 
     @nowarn("cat=deprecation")
-    def build(implicit F: Async[F]): BlockingHttp4sServlet[F] =
+    def build(implicit F: Sync[F]): BlockingHttp4sServlet[F] =
       new BlockingHttp4sServlet(
         httpApp,
         BlockingServletIo(chunkSize.getOrElse(DefaultChunkSize)),
