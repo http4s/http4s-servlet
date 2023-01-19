@@ -43,6 +43,7 @@ lazy val servlet = project
       "org.eclipse.jetty" % "jetty-servlet" % jettyVersion % Test,
       "org.http4s" %% "http4s-dsl" % http4sVersion % Test,
       "org.http4s" %% "http4s-server" % http4sVersion,
+      "org.typelevel" %% "cats-effect" % "3.4.5",
       "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
     ),
   )
@@ -64,3 +65,16 @@ lazy val examples = project
   .dependsOn(servlet)
 
 lazy val docs = project.in(file("site")).enablePlugins(TypelevelSitePlugin)
+
+lazy val benchmarks = project
+  .in(file("benchmarks"))
+  .dependsOn(servlet)
+  .settings(
+    name := "servlet-benchmarks",
+    libraryDependencies ++= Seq(
+      "javax.servlet" % "javax.servlet-api" % servletApiVersion,
+    ),
+    javaOptions ++= Seq(
+      "-Dcats.effect.tracing.mode=none",
+      "-Dcats.effect.tracing.exceptions.enhanced=false"))
+  .enablePlugins(NoPublishPlugin, JmhPlugin)
