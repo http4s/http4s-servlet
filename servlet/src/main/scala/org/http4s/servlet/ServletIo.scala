@@ -239,9 +239,10 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
                 case len if len == chunkSize =>
                   // We used the whole buffer.  Replace it new before next read.
                   q.offer(Bytes(Chunk.array(buf))) >> F.delay(unsafeReplaceBuffer()) >> loopIfReady
-                case len if len >= 0 =>
+                case len if len > 0 =>
                   // Got a partial chunk.  Copy it, and reuse the current buffer.
                   q.offer(Bytes(Chunk.array(Arrays.copyOf(buf, len)))) >> loopIfReady
+                case len if len == 0 => loopIfReady
                 case _ =>
                   F.unit
               }
