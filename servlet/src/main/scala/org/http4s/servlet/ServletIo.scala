@@ -220,7 +220,7 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
 
     Stream.eval(F.delay(servletRequest.getInputStream)).flatMap { in =>
       Stream.eval(Queue.bounded[F, Read](4)).flatMap { q =>
-        val readBody = Stream.exec(F.delay(in.setReadListener(new ReadListener {
+        val readBody = Stream.eval(F.delay(in.setReadListener(new ReadListener {
           var buf: Array[Byte] = _
           unsafeReplaceBuffer()
 
@@ -268,7 +268,7 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
             case Error(t) => Pull.raiseError[F](t)
           }
 
-        pullBody.stream.concurrently(readBody)
+        readBody.flatMap(_ => pullBody.stream)
       }
     }
   }
