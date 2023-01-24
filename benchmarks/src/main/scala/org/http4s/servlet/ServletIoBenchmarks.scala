@@ -58,7 +58,7 @@ class ServletIoBenchmarks {
     val req = servletRequest
     val servletIo = NonBlockingServletIo[IO](4096)
 
-    Dispatcher.parallel[IO].use { disp =>
+    Dispatcher.sequential[IO].use { disp =>
       def loop(i: Int): IO[Unit] =
         if (i == iters) IO.unit else servletIo.requestBody(req, disp).compile.drain >> loop(i + 1)
 
