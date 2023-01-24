@@ -261,7 +261,7 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
 
         def pullBody: Pull[F, Byte, Unit] =
           Pull.eval(q.take).flatMap {
-            case chunk: Chunk[Byte] => Pull.output(chunk) >> pullBody
+            case chunk: Chunk[Byte] @ unchecked => Pull.output(chunk) >> pullBody
             case End => Pull.done
             case t: Throwable => Pull.raiseError[F](t)
           }
