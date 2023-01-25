@@ -38,8 +38,8 @@ class ServletIoBenchmarks {
   @Param(Array("1000"))
   var iters: Int = _
 
-  def servletRequest: HttpServletRequest = new HttpServletRequestStub(
-    new TestServletInputStream(Random.nextBytes(size))
+  def servletRequest: HttpServletRequestStub = new HttpServletRequestStub(
+    TestServletInputStream(Random.nextBytes(size))
   )
 
   @Benchmark
@@ -62,14 +62,15 @@ class ServletIoBenchmarks {
       .sequential[IO]
       .use { disp =>
         def loop(i: Int): IO[Unit] =
-          if (i == iters) IO.unit else servletIo.requestBody(req, disp).compile.drain >> loop(i + 1)
+          if (i == iters) IO.unit
+          else servletIo.requestBody(req, disp).compile.to(Array).map(bs => assert(bs sameElements req.inputStream.body, s"${bs.toVector} == ${req.inputStream.body.toVector}")) >> loop(i + 1)
 
         loop(0)
       }
       .unsafeRunSync()
   }
 
-  class TestServletInputStream(body: Array[Byte]) extends ServletInputStream {
+  case class TestServletInputStream(body: Array[Byte]) extends ServletInputStream {
     private var readListener: ReadListener = null
     private val in = new ByteArrayInputStream(body)
 
@@ -91,7 +92,7 @@ class ServletIoBenchmarks {
   }
 
   case class HttpServletRequestStub(
-      inputStream: ServletInputStream
+      inputStream: TestServletInputStream
   ) extends HttpServletRequest {
     def getInputStream(): ServletInputStream = inputStream
 
