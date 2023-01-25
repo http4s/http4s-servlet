@@ -58,15 +58,13 @@ class ServletIoBenchmarks {
     val req = servletRequest
     val servletIo = NonBlockingServletIo[IO](4096)
 
-    Dispatcher
-      .sequential[IO]
-      .use { disp =>
-        def loop(i: Int): IO[Unit] =
-          if (i == iters) IO.unit else servletIo.requestBody(req, disp).compile.drain >> loop(i + 1)
+    def loop(i: Int): IO[Unit] =
+      if (i == iters) IO.unit
+      else Dispatcher.sequential[IO].use { dispatcher =>
+        servletIo.requestBody(req, dispatcher).compile.drain
+      } >> loop(i + 1)
 
-        loop(0)
-      }
-      .unsafeRunSync()
+    loop(0).unsafeRunSync()
   }
 
   class TestServletInputStream(body: Array[Byte]) extends ServletInputStream {
