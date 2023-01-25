@@ -86,6 +86,20 @@ class ServletIoBenchmarks {
         readListener.onAllDataRead()
       result
     }
+
+    override def read(buf: Array[Byte]) = {
+      val result = in.read(buf)
+      if (in.available() == 0)
+        readListener.onAllDataRead()
+      result
+    }
+
+    override def read(buf: Array[Byte], off: Int, len: Int) = {
+      val result = in.read(buf, off, len)
+      if (in.available() == 0)
+        readListener.onAllDataRead()
+      result
+    }
   }
 
   case class HttpServletRequestStub(
