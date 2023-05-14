@@ -213,14 +213,11 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
       servletRequest: HttpServletRequest,
       dispatcher: Dispatcher[F],
   ): Stream[F, Byte] = {
-    sealed trait Read
-    final case class Bytes(chunk: Chunk[Byte]) extends Read
-    case object End extends Read
-    final case class Error(t: Throwable) extends Read
+    case object End
 
     Stream.eval(F.delay(servletRequest.getInputStream)).flatMap { in =>
-      Stream.eval(Queue.bounded[F, Read](4)).flatMap { q =>
-        val readBody = Stream.exec(F.delay(in.setReadListener(new ReadListener {
+      Stream.eval(Queue.bounded[F, Any](4)).flatMap { q =>
+        val readBody = Stream.eval(F.delay(in.setReadListener(new ReadListener {
           var buf: Array[Byte] = _
           unsafeReplaceBuffer()
 
@@ -238,10 +235,11 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
               F.delay(in.read(buf)).flatMap {
                 case len if len == chunkSize =>
                   // We used the whole buffer.  Replace it new before next read.
-                  q.offer(Bytes(Chunk.array(buf))) >> F.delay(unsafeReplaceBuffer()) >> loopIfReady
-                case len if len >= 0 =>
+                  q.offer(Chunk.array(buf)) >> F.delay(unsafeReplaceBuffer()) >> loopIfReady
+                case len if len > 0 =>
                   // Got a partial chunk.  Copy it, and reuse the current buffer.
-                  q.offer(Bytes(Chunk.array(Arrays.copyOf(buf, len)))) >> loopIfReady
+                  q.offer(Chunk.array(Arrays.copyOf(buf, len))) >> loopIfReady
+                case len if len == 0 => loopIfReady
                 case _ =>
                   F.unit
               }
@@ -253,7 +251,7 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
             unsafeRunAndForget(q.offer(End))
 
           def onError(t: Throwable): Unit =
-            unsafeRunAndForget(q.offer(Error(t)))
+            unsafeRunAndForget(q.offer(t))
 
           def unsafeRunAndForget[A](fa: F[A]): Unit =
             dispatcher.unsafeRunAndForget(
@@ -263,12 +261,12 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
 
         def pullBody: Pull[F, Byte, Unit] =
           Pull.eval(q.take).flatMap {
-            case Bytes(chunk) => Pull.output(chunk) >> pullBody
+            case chunk: Chunk[Byte] @unchecked => Pull.output(chunk) >> pullBody
             case End => Pull.done
-            case Error(t) => Pull.raiseError[F](t)
+            case t: Throwable => Pull.raiseError[F](t)
           }
 
-        pullBody.stream.concurrently(readBody)
+        readBody.flatMap(_ => pullBody.stream)
       }
     }
   }
