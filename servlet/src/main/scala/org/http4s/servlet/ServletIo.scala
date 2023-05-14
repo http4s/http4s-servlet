@@ -41,7 +41,7 @@ sealed abstract class ServletIo[F[_]: Async] {
   /** An alias for [[reader]].  In the future, this will be optimized with
     * the dispatcher.
     *
-    * @dispatcher currently ignored
+    * @param dispatcher currently ignored
     */
   def requestBody(
       servletRequest: HttpServletRequest,
@@ -57,7 +57,7 @@ sealed abstract class ServletIo[F[_]: Async] {
   /** An alias for [[initWriter]].  In the future, this will be
     * optimized with the dispatcher.
     *
-    * @dispatcher currently ignored
+    * @param dispatcher currently ignored
     */
   def bodyWriter(servletResponse: HttpServletResponse, dispatcher: Dispatcher[F])(
       response: Response[F]
