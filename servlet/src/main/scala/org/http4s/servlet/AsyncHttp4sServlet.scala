@@ -76,6 +76,8 @@ class AsyncHttp4sServlet[F[_]] @deprecated("Use AsyncHttp4sServlet.builder", "0.
       dispatcher.unsafeRunAndForget(result)
     } catch errorHandler(servletRequest, servletResponse).andThen(dispatcher.unsafeRunSync _)
 
+  private[this] val noopCancelToken = Some(F.unit)
+
   private def handleRequest(
       ctx: AsyncContext,
       request: Request[F],
@@ -88,7 +90,7 @@ class AsyncHttp4sServlet[F[_]] @deprecated("Use AsyncHttp4sServlet.builder", "0.
 
       val timeout =
         F.async[Response[F]](cb =>
-          gate.complete(ctx.addListener(new AsyncTimeoutHandler(cb))).as(Option.empty[F[Unit]])
+          gate.complete(ctx.addListener(new AsyncTimeoutHandler(cb))).as(noopCancelToken)
         )
       val response =
         gate.get *>
