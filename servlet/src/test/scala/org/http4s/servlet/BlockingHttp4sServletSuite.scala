@@ -54,7 +54,7 @@ class BlockingHttp4sServletSuite extends CatsEffectSuite {
   private def get(serverPort: Int, path: String): IO[String] =
     Resource
       .make(IO.blocking(Source.fromURL(new URL(s"http://127.0.0.1:$serverPort/$path"))))(source =>
-        IO(source.close())
+        IO.blocking(source.close())
       )
       .use { source =>
         IO.blocking(source.getLines().mkString)
@@ -74,7 +74,7 @@ class BlockingHttp4sServletSuite extends CatsEffectSuite {
       Resource
         .make(
           IO.blocking(Source.fromInputStream(conn.getInputStream, StandardCharsets.UTF_8.name))
-        )(source => IO(source.close()))
+        )(source => IO.blocking(source.close()))
         .use { source =>
           IO.blocking(source.getLines().mkString)
         }
