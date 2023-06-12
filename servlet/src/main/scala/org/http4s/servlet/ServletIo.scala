@@ -24,6 +24,7 @@ import fs2._
 import org.http4s.internal.bug
 import org.log4s.getLogger
 
+import java.util.concurrent.CancellationException
 import java.util.concurrent.atomic.AtomicReference
 import javax.servlet.ReadListener
 import javax.servlet.WriteListener
@@ -115,12 +116,14 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
       case object Init extends State
       case object Ready extends State
       case object Complete extends State
+      case object Canceled extends State
       sealed case class Errored(t: Throwable) extends State
       sealed case class Blocked(cb: Callback[Option[Chunk[Byte]]]) extends State
 
       val in = servletRequest.getInputStream
 
       val state = new AtomicReference[State](Init)
+      val cancelToken: F[Option[F[Unit]]] = F.pure(Some(F.delay(state.set(Canceled))))
 
       def read(cb: Callback[Option[Chunk[Byte]]]): Unit = {
         val buf = new Array[Byte](chunkSize)
@@ -141,7 +144,7 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
         // This effect sets the callback and waits for the first bytes to read
         val registerRead =
           // Shift execution to a different EC
-          F.async_[Option[Chunk[Byte]]] { cb =>
+          F.async[Option[Chunk[Byte]]] { cb =>
             if (!state.compareAndSet(Init, Blocked(cb)))
               cb(Left(bug("Shouldn't have gotten here: I should be the first to set a state")))
             else
@@ -166,12 +169,13 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
                     }
                 }
               )
+            cancelToken
           }
 
         val readStream = Stream.eval(registerRead) ++ Stream
           .repeatEval( // perform the initial set then transition into normal read mode
             // Shift execution to a different EC
-            F.async_[Option[Chunk[Byte]]] { cb =>
+            F.async[Option[Chunk[Byte]]] { cb =>
               @tailrec
               def go(): Unit =
                 state.get match {
@@ -189,6 +193,8 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
 
                   case Complete => cb(rightNone)
 
+                  case Canceled => cb(Left(new CancellationException("Servlet read was canceled")))
+
                   case Errored(t) => cb(Left(t))
 
                   // This should never happen so throw a huge fit if it does.
@@ -203,6 +209,7 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
                     cb(Left(bug("Should have left Init state by now")))
                 }
               go()
+              cancelToken
             }
           )
         readStream.unNoneTerminate.flatMap(Stream.chunk)
@@ -215,6 +222,7 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
     sealed trait State
     case object Init extends State
     case object Ready extends State
+    case object Canceled extends State
     sealed case class Errored(t: Throwable) extends State
     sealed case class Blocked(cb: Callback[Chunk[Byte] => Unit]) extends State
     sealed case class AwaitingLastWrite(cb: Callback[Unit]) extends State
@@ -227,6 +235,8 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
      * fires.
      */
     val state = new AtomicReference[State](Init)
+    val cancelToken: F[Option[F[Unit]]] = F.pure(Some(F.delay(state.set(Canceled))))
+
     @volatile var autoFlush = false
 
     val writeChunk = Right { (chunk: Chunk[Byte]) =>
@@ -263,16 +273,17 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
 
     val awaitLastWrite = Stream.exec {
       // Shift execution to a different EC
-      F.async_[Unit] { cb =>
+      F.async[Unit] { cb =>
         state.getAndSet(AwaitingLastWrite(cb)) match {
           case Ready if out.isReady => cb(Right(()))
           case _ => ()
         }
+        cancelToken
       }
     }
 
     val chunkHandler =
-      F.async_[Chunk[Byte] => Unit] { cb =>
+      F.async[Chunk[Byte] => Unit] { cb =>
         val blocked = Blocked(cb)
         state.getAndSet(blocked) match {
           case Ready if out.isReady =>
@@ -281,9 +292,13 @@ final case class NonBlockingServletIo[F[_]: Async](chunkSize: Int) extends Servl
           case e @ Errored(t) =>
             if (state.compareAndSet(blocked, e))
               cb(Left(t))
+          case Canceled =>
+            if (state.compareAndSet(blocked, Canceled))
+              cb(Left(new CancellationException("Servlet write was canceled")))
           case _ =>
             ()
         }
+        cancelToken
       }
 
     def flushPrelude =
