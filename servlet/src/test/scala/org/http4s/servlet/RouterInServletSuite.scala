@@ -128,7 +128,7 @@ class RouterInServletSuite extends CatsEffectSuite {
   private def get(serverPort: Int, path: String): IO[String] =
     Resource
       .make(IO.blocking(Source.fromURL(new URL(s"http://127.0.0.1:$serverPort/$path"))))(source =>
-        IO.delay(source.close())
+        IO.blocking(source.close())
       )
       .use { source =>
         IO.blocking(source.getLines().mkString)
