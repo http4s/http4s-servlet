@@ -70,7 +70,7 @@ class AsyncHttp4sServlet[F[_]] @deprecated("Use AsyncHttp4sServlet.builder", "0.
           )
         )
         .flatMap {
-          case Right(()) => F.delay(ctx.complete)
+          case Right(()) => F.delay(ctx.complete())
           case Left(t) => errorHandler(servletRequest, servletResponse)(t)
         }
       dispatcher.unsafeRunAndForget(result)

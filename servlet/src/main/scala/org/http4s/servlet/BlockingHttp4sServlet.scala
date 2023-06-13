@@ -17,6 +17,7 @@
 package org.http4s
 package servlet
 
+import cats.effect.Async
 import cats.effect.kernel.Sync
 import cats.effect.std.Dispatcher
 import cats.syntax.all._
@@ -49,7 +50,7 @@ class BlockingHttp4sServlet[F[_]] private (
   ): Unit = {
     val result = F
       .defer {
-        val bodyWriter = servletIo.bodyWriter(servletResponse, dispatcher) _
+        val bodyWriter = servletIo.initWriter(servletResponse)
 
         val render = toRequest(servletRequest).fold(
           onParseFailure(_, servletResponse, bodyWriter),
@@ -106,13 +107,13 @@ object BlockingHttp4sServlet {
       ) {}
 
     @nowarn("cat=deprecation")
-    def build(implicit F: Sync[F]): BlockingHttp4sServlet[F] =
-      new BlockingHttp4sServlet(
-        httpApp,
-        BlockingServletIo(chunkSize.getOrElse(DefaultChunkSize)),
-        DefaultServiceErrorHandler,
-        dispatcher,
-      )
+    def build(implicit F: Async[F]): BlockingHttp4sServlet[F] =
+        new BlockingHttp4sServlet(
+            httpApp,
+            BlockingServletIo(chunkSize.getOrElse(DefaultChunkSize)),
+            DefaultServiceErrorHandler,
+            dispatcher,
+        )
 
     def withHttpApp(httpApp: HttpApp[F]): Builder[F] =
       copy(httpApp = httpApp)
