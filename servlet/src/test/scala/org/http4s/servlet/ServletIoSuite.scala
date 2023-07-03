@@ -18,6 +18,7 @@ package org.http4s
 package servlet
 
 import cats.effect.IO
+import cats.effect.std.Dispatcher
 import munit.CatsEffectSuite
 
 import java.io.ByteArrayInputStream
@@ -33,8 +34,10 @@ class ServletIoSuite extends CatsEffectSuite {
       HttpServletRequestStub(inputStream = new TestServletInputStream("test".getBytes(UTF_8)))
 
     val io = NonBlockingServletIo[IO](10)
-    val body = io.reader(request)
-    body.compile.toList.map(bytes => new String(bytes.toArray, UTF_8)).assertEquals("test")
+    Dispatcher.parallel[IO].use { dispatcher =>
+      val body = io.requestBody(request, dispatcher)
+      body.compile.to(Array).map(bytes => new String(bytes, UTF_8)).assertEquals("test")
+    }
   }
 
   test(
@@ -45,8 +48,10 @@ class ServletIoSuite extends CatsEffectSuite {
     )
 
     val io = NonBlockingServletIo[IO](10)
-    val body = io.reader(request)
-    body.compile.toList.map(bytes => new String(bytes.toArray, UTF_8)).assertEquals("testtesttest")
+    Dispatcher.parallel[IO].use { dispatcher =>
+      val body = io.requestBody(request, dispatcher)
+      body.compile.to(Array).map(bytes => new String(bytes, UTF_8)).assertEquals("testtesttest")
+    }
   }
 
   class TestServletInputStream(body: Array[Byte]) extends ServletInputStream {
