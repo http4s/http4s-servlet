@@ -52,7 +52,7 @@ class BlockingHttp4sServlet[F[_]] private (
         val bodyWriter = servletIo.bodyWriter(servletResponse, dispatcher) _
 
         val render = toRequest(servletRequest).fold(
-          onParseFailure(_, servletResponse, bodyWriter),
+          onParseFailure(_, servletResponse),
           handleRequest(_, servletResponse, bodyWriter),
         )
 

@@ -62,17 +62,13 @@ class AsyncHttp4sServlet[F[_]] @deprecated("Use AsyncHttp4sServlet.builder", "0.
       ctx.setTimeout(asyncTimeoutMillis)
       // Must be done on the container thread for Tomcat's sake when using async I/O.
       val bodyWriter = servletIo.bodyWriter(servletResponse, dispatcher) _
-      val result = F
-        .attempt(
-          toRequest(servletRequest).fold(
-            onParseFailure(_, servletResponse, bodyWriter),
+      val result =
+        toRequest(servletRequest)
+          .fold(
+            onParseFailure(_, servletResponse),
             handleRequest(ctx, _, bodyWriter),
           )
-        )
-        .flatMap {
-          case Right(()) => F.delay(ctx.complete())
-          case Left(t) => errorHandler(servletRequest, servletResponse)(t)
-        }
+          .recoverWith(errorHandler(servletRequest, servletResponse))
       dispatcher.unsafeRunAndForget(result)
     } catch errorHandler(servletRequest, servletResponse).andThen(dispatcher.unsafeRunSync _)
 
@@ -87,17 +83,23 @@ class AsyncHttp4sServlet[F[_]] @deprecated("Use AsyncHttp4sServlet.builder", "0.
       // It is an error to add a listener to an async context that is
       // already completed, so we must take care to add the listener
       // before the response can complete.
-
       val timeout =
-        F.async[Response[F]](cb =>
+        F.async[Unit](cb =>
           gate.complete(ctx.addListener(new AsyncTimeoutHandler(cb))).as(noopCancelToken)
         )
       val response =
         gate.get *>
           F.defer(serviceFn(request))
             .recoverWith(serviceErrorHandler(request))
-      val servletResponse = ctx.getResponse.asInstanceOf[HttpServletResponse]
-      F.race(timeout, response).flatMap(r => renderResponse(r.merge, servletResponse, bodyWriter))
+      F.race(timeout, response).flatMap {
+        case Left(_) =>
+          // In Jetty, if onTimeout is called, we need to complete on the
+          // listener's own thread.
+          F.unit
+        case Right(resp) =>
+          val servletResponse = ctx.getResponse.asInstanceOf[HttpServletResponse]
+          renderResponse(resp, servletResponse, bodyWriter) *> F.delay(ctx.complete())
+      }
     }
 
   private def errorHandler(
@@ -124,11 +126,19 @@ class AsyncHttp4sServlet[F[_]] @deprecated("Use AsyncHttp4sServlet.builder", "0.
         }
   }
 
-  private class AsyncTimeoutHandler(cb: Callback[Response[F]]) extends AbstractAsyncListener {
+  private class AsyncTimeoutHandler(cb: Callback[Unit]) extends AbstractAsyncListener {
     override def onTimeout(event: AsyncEvent): Unit = {
+      // In Jetty, we must complete on the same thread as the timeout
+      // handler.  This triggers a cancellation of the service so we
+      // can take over.
+      cb(Right(()))
+
+      val ctx = event.getAsyncContext
       val req = event.getAsyncContext.getRequest.asInstanceOf[HttpServletRequest]
       logger.info(s"Request timed out: ${req.getMethod} ${req.getServletPath}${req.getPathInfo}")
-      cb(Right(Response.timeout[F]))
+      val resp = event.getAsyncContext.getResponse.asInstanceOf[HttpServletResponse]
+      resp.sendError(Response.timeout.status.code, "Response timed out")
+      ctx.complete()
     }
   }
 }
