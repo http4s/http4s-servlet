@@ -21,7 +21,7 @@ ThisBuild / tlJdkRelease := Some(8)
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.12.3"
-val jettyVersion = "10.0.15"
+val jettyVersion = "10.0.16"
 val http4sVersion = "0.23.22"
 val munitCatsEffectVersion = "1.0.7"
 val servletApiVersion = "4.0.1"
