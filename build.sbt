@@ -23,7 +23,7 @@ lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 val asyncHttpClientVersion = "2.12.3"
 val jettyVersion = "11.0.15"
 val http4sVersion = "0.23.17"
-val munitCatsEffectVersion = "1.0.7"
+val munitCatsEffectVersion = "2.0.0"
 val servletApiVersion = "5.0.0"
 
 lazy val servlet = project
@@ -39,7 +39,7 @@ lazy val servlet = project
       "org.eclipse.jetty" % "jetty-servlet" % jettyVersion % Test,
       "org.http4s" %% "http4s-dsl" % http4sVersion % Test,
       "org.http4s" %% "http4s-server" % http4sVersion,
-      "org.typelevel" %% "munit-cats-effect-3" % munitCatsEffectVersion % Test,
+      "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test,
     ),
   )
 
