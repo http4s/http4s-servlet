@@ -45,7 +45,9 @@ class RouterInServletSuite extends CatsEffectSuite {
   )
 
   private val serverWithoutRouter =
-    ResourceFunFixture[Int](Dispatcher.parallel[IO].flatMap(d => mkServer(mainRoutes, dispatcher = d)))
+    ResourceFunFixture[Int](
+      Dispatcher.parallel[IO].flatMap(d => mkServer(mainRoutes, dispatcher = d))
+    )
   private val server =
     ResourceFunFixture[Int](Dispatcher.parallel[IO].flatMap(d => mkServer(router, dispatcher = d)))
   private val serverWithContextPath =
