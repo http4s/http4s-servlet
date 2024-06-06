@@ -21,7 +21,6 @@ import cats.effect.IO
 import cats.effect.Resource
 import cats.effect.kernel.Temporal
 import cats.effect.std.Dispatcher
-import cats.syntax.all._
 import munit.CatsEffectSuite
 import org.http4s.dsl.io._
 import org.http4s.syntax.all._
