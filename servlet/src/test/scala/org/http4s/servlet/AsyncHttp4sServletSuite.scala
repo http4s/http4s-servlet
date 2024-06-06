@@ -59,7 +59,7 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
     .orNotFound
 
   private def servletServer(asyncTimeout: FiniteDuration = 10.seconds) =
-    ResourceFixture[Int](
+    ResourceFunFixture[Int](
       Dispatcher.parallel[IO].flatMap(d => TestEclipseServer(servlet(d, asyncTimeout)))
     )
 
