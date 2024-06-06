@@ -17,6 +17,7 @@ ThisBuild / scalaVersion := Scala213 // the default Scala
 // Jetty 10+, for testing, requires Java 11.
 ThisBuild / githubWorkflowJavaVersions -= JavaSpec.temurin("8")
 ThisBuild / tlJdkRelease := Some(8)
+ThisBuild / startYear := Some(2013)
 
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
@@ -31,7 +32,6 @@ lazy val servlet = project
   .settings(
     name := "http4s-servlet",
     description := "Portable servlet implementation for http4s servers",
-    startYear := Some(2013),
     libraryDependencies ++= Seq(
       "javax.servlet" % "javax.servlet-api" % servletApiVersion % Provided,
       "org.eclipse.jetty" % "jetty-client" % jettyVersion % Test,
