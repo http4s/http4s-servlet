@@ -21,10 +21,8 @@ import cats.effect.IO
 import cats.effect.Resource
 import cats.effect.kernel.Temporal
 import cats.effect.std.Dispatcher
-import cats.syntax.all._
 import munit.CatsEffectSuite
 import org.http4s.dsl.io._
-import org.http4s.server.DefaultServiceErrorHandler
 import org.http4s.syntax.all._
 
 import java.net.HttpURLConnection
@@ -47,14 +45,14 @@ class BlockingHttp4sServletSuite extends CatsEffectSuite {
     }
     .orNotFound
 
-  private val servletServer = ResourceFixture(
+  private val servletServer = ResourceFunFixture(
     Dispatcher.parallel[IO].flatMap(d => TestEclipseServer(servlet(d)))
   )
 
   private def get(serverPort: Int, path: String): IO[String] =
     Resource
       .make(IO.blocking(Source.fromURL(new URL(s"http://127.0.0.1:$serverPort/$path"))))(source =>
-        IO(source.close())
+        IO.blocking(source.close())
       )
       .use { source =>
         IO.blocking(source.getLines().mkString)
@@ -74,7 +72,7 @@ class BlockingHttp4sServletSuite extends CatsEffectSuite {
       Resource
         .make(
           IO.blocking(Source.fromInputStream(conn.getInputStream, StandardCharsets.UTF_8.name))
-        )(source => IO(source.close()))
+        )(source => IO.blocking(source.close()))
         .use { source =>
           IO.blocking(source.getLines().mkString)
         }
@@ -92,10 +90,6 @@ class BlockingHttp4sServletSuite extends CatsEffectSuite {
     get(server, "shifted").assertEquals("shifted")
   }
 
-  private def servlet(dispatcher: Dispatcher[IO]) = new BlockingHttp4sServlet[IO](
-    service = service,
-    servletIo = org.http4s.servlet.BlockingServletIo(4096),
-    serviceErrorHandler = DefaultServiceErrorHandler,
-    dispatcher = dispatcher,
-  )
+  private def servlet(dispatcher: Dispatcher[IO]) =
+    BlockingHttp4sServlet.builder[IO](service, dispatcher).build
 }
