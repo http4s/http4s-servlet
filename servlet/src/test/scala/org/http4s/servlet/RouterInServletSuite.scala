@@ -45,23 +45,25 @@ class RouterInServletSuite extends CatsEffectSuite {
   )
 
   private val serverWithoutRouter =
-    ResourceFixture[Int](Dispatcher.parallel[IO].flatMap(d => mkServer(mainRoutes, dispatcher = d)))
+    ResourceFunFixture[Int](
+      Dispatcher.parallel[IO].flatMap(d => mkServer(mainRoutes, dispatcher = d))
+    )
   private val server =
-    ResourceFixture[Int](Dispatcher.parallel[IO].flatMap(d => mkServer(router, dispatcher = d)))
+    ResourceFunFixture[Int](Dispatcher.parallel[IO].flatMap(d => mkServer(router, dispatcher = d)))
   private val serverWithContextPath =
-    ResourceFixture[Int](
+    ResourceFunFixture[Int](
       Dispatcher
         .parallel[IO]
         .flatMap(d => mkServer(router, contextPath = "/context", dispatcher = d))
     )
   private val serverWithServletPath =
-    ResourceFixture[Int](
+    ResourceFunFixture[Int](
       Dispatcher
         .parallel[IO]
         .flatMap(d => mkServer(router, servletPath = "/servlet/*", dispatcher = d))
     )
   private val serverWithContextAndServletPath =
-    ResourceFixture[Int](
+    ResourceFunFixture[Int](
       Dispatcher
         .parallel[IO]
         .flatMap(d =>
@@ -128,7 +130,7 @@ class RouterInServletSuite extends CatsEffectSuite {
   private def get(serverPort: Int, path: String): IO[String] =
     Resource
       .make(IO.blocking(Source.fromURL(new URL(s"http://127.0.0.1:$serverPort/$path"))))(source =>
-        IO.delay(source.close())
+        IO.blocking(source.close())
       )
       .use { source =>
         IO.blocking(source.getLines().mkString)
