@@ -24,6 +24,8 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.http4s.server._
 
+import scala.annotation.nowarn
+
 class BlockingHttp4sServlet[F[_]] private (
     service: HttpApp[F],
     servletIo: ServletIo[F],
@@ -32,6 +34,7 @@ class BlockingHttp4sServlet[F[_]] private (
 )(implicit F: Sync[F])
     extends Http4sServlet[F](service, servletIo, dispatcher) {
 
+  @deprecated("Use BlockingHttp4sServlet.builder", "0.24.0")
   def this(
       service: HttpApp[F],
       servletIo: BlockingServletIo[F],
@@ -49,7 +52,7 @@ class BlockingHttp4sServlet[F[_]] private (
         val bodyWriter = servletIo.bodyWriter(servletResponse, dispatcher) _
 
         val render = toRequest(servletRequest).fold(
-          onParseFailure(_, servletResponse, bodyWriter),
+          onParseFailure(_, servletResponse),
           handleRequest(_, servletResponse, bodyWriter),
         )
 
@@ -85,12 +88,55 @@ class BlockingHttp4sServlet[F[_]] private (
 }
 
 object BlockingHttp4sServlet {
-  def apply[F[_]: Sync](
+
+  class Builder[F[_]] private[BlockingHttp4sServlet] (
+      httpApp: HttpApp[F],
+      dispatcher: Dispatcher[F],
+      chunkSize: Option[Int],
+  ) {
+    private def copy(
+        httpApp: HttpApp[F] = httpApp,
+        dispatcher: Dispatcher[F] = dispatcher,
+        chunkSize: Option[Int] = chunkSize,
+    ): Builder[F] =
+      new Builder[F](
+        httpApp,
+        dispatcher,
+        chunkSize,
+      ) {}
+
+    @nowarn("cat=deprecation")
+    def build(implicit F: Sync[F]): BlockingHttp4sServlet[F] =
+      new BlockingHttp4sServlet(
+        httpApp,
+        BlockingServletIo(chunkSize.getOrElse(DefaultChunkSize)),
+        DefaultServiceErrorHandler,
+        dispatcher,
+      )
+
+    def withHttpApp(httpApp: HttpApp[F]): Builder[F] =
+      copy(httpApp = httpApp)
+
+    def withDispatcher(dispatcher: Dispatcher[F]): Builder[F] =
+      copy(dispatcher = dispatcher)
+
+    def withChunkSize(chunkSize: Int): Builder[F] =
+      copy(chunkSize = Some(chunkSize))
+  }
+
+  def builder[F[_]](httpApp: HttpApp[F], dispatcher: Dispatcher[F]): Builder[F] =
+    new Builder[F](httpApp, dispatcher, None) {}
+
+  @deprecated(
+    "Use `builder` instead",
+    "0.24.0",
+  )
+  def apply[F[_]](
       service: HttpApp[F],
       servletIo: ServletIo[F],
       dispatcher: Dispatcher[F],
-  ): BlockingHttp4sServlet[F] =
-    new BlockingHttp4sServlet[F](
+  )(implicit F: Sync[F]): BlockingHttp4sServlet[F] =
+    new BlockingHttp4sServlet(
       service,
       servletIo,
       DefaultServiceErrorHandler,
