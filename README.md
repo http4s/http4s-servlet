@@ -17,8 +17,8 @@ libraryDependencies ++= Seq(
 | http4s-servlet | http4s-core | servlet-api | Scala 2.12 | Scala 2.13 | Scala 3 | Status    |
 |:---------------|:------------|:------------|------------|------------|---------|:----------|
 | 0.23.x         | 0.23.x      | 3.1         | ✅         | ✅         | ✅      | Stable    |
-| 0.24.x         | 0.23.x      | 4.0         | ✅         | ✅         | ✅      | Milestone |
-| 0.25.x         | 0.23.x      | 5.0         | ✅         | ✅         | ✅      | Milestone |
+| 0.24.x         | 0.23.x      | 4.0         | ✅         | ✅         | ✅      | RC        |
+| 0.25.x         | 0.23.x      | 5.0         | ✅         | ✅         | ✅      | RC        |
 
 [http4s-jetty]: https://github.com/http4s/http4s-jetty/
 [http4s-tomcat]: https://github.com/http4s/http4s-tomcat/
