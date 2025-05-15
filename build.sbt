@@ -17,6 +17,10 @@ ThisBuild / scalaVersion := Scala213 // the default Scala
 // Jakarta EE 10 requires Java 11
 ThisBuild / githubWorkflowJavaVersions -= JavaSpec.temurin("8")
 ThisBuild / tlJdkRelease := Some(11)
+
+// Jetty for Servlet 6 requires Jetty 17
+ThisBuild / githubWorkflowJavaVersions -= JavaSpec.temurin("11")
+
 ThisBuild / startYear := Some(2013)
 
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
