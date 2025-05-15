@@ -26,7 +26,7 @@ ThisBuild / startYear := Some(2013)
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.12.3"
-val jettyVersion = "11.0.25"
+val jettyVersion = "12.0.21"
 val http4sVersion = "0.23.30"
 val munitCatsEffectVersion = "2.1.0"
 val servletApiVersion = "6.0.0"
@@ -40,7 +40,7 @@ lazy val servlet = project
       "jakarta.servlet" % "jakarta.servlet-api" % servletApiVersion % Provided,
       "org.eclipse.jetty" % "jetty-client" % jettyVersion % Test,
       "org.eclipse.jetty" % "jetty-server" % jettyVersion % Test,
-      "org.eclipse.jetty" % "jetty-servlet" % jettyVersion % Test,
+      "org.eclipse.jetty.ee10" % "jetty-ee10-servlet" % jettyVersion % Test,
       "org.http4s" %% "http4s-dsl" % http4sVersion % Test,
       "org.http4s" %% "http4s-server" % http4sVersion,
       "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test,
@@ -56,7 +56,7 @@ lazy val examples = project
     description := "Examples for http4s-servlet",
     startYear := Some(2013),
     fork := true,
-    Jetty / containerLibs := List("org.eclipse.jetty" % "jetty-runner" % jettyVersion),
+    // Jetty / containerLibs := List("org.eclipse.jetty" % "jetty-runner" % jettyVersion),
     libraryDependencies ++= Seq(
       "jakarta.servlet" % "jakarta.servlet-api" % servletApiVersion % Provided
     ),
