@@ -1,5 +1,5 @@
 // https://typelevel.org/sbt-typelevel/faq.html#what-is-a-base-version-anyway
-ThisBuild / tlBaseVersion := "0.25" // your current series x.y
+ThisBuild / tlBaseVersion := "0.26" // your current series x.y
 
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / developers := List(
@@ -14,18 +14,22 @@ val Scala213 = "2.13.16"
 ThisBuild / crossScalaVersions := Seq("2.12.20", Scala213, "3.3.5")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 
-// Jetty 10+, for testing, requires Java 11.
+// Jakarta EE 10 requires Java 11
 ThisBuild / githubWorkflowJavaVersions -= JavaSpec.temurin("8")
-ThisBuild / tlJdkRelease := Some(8)
+ThisBuild / tlJdkRelease := Some(11)
+
+// Jetty for Servlet 6 requires Jetty 17
+ThisBuild / githubWorkflowJavaVersions -= JavaSpec.temurin("11")
+
 ThisBuild / startYear := Some(2013)
 
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.12.3"
-val jettyVersion = "11.0.25"
+val jettyVersion = "12.0.21"
 val http4sVersion = "0.23.30"
 val munitCatsEffectVersion = "2.1.0"
-val servletApiVersion = "5.0.0"
+val servletApiVersion = "6.0.0"
 
 lazy val servlet = project
   .in(file("servlet"))
@@ -36,7 +40,7 @@ lazy val servlet = project
       "jakarta.servlet" % "jakarta.servlet-api" % servletApiVersion % Provided,
       "org.eclipse.jetty" % "jetty-client" % jettyVersion % Test,
       "org.eclipse.jetty" % "jetty-server" % jettyVersion % Test,
-      "org.eclipse.jetty" % "jetty-servlet" % jettyVersion % Test,
+      "org.eclipse.jetty.ee10" % "jetty-ee10-servlet" % jettyVersion % Test,
       "org.http4s" %% "http4s-dsl" % http4sVersion % Test,
       "org.http4s" %% "http4s-server" % http4sVersion,
       "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test,
@@ -52,7 +56,7 @@ lazy val examples = project
     description := "Examples for http4s-servlet",
     startYear := Some(2013),
     fork := true,
-    Jetty / containerLibs := List("org.eclipse.jetty" % "jetty-runner" % jettyVersion),
+    // Jetty / containerLibs := List("org.eclipse.jetty" % "jetty-runner" % jettyVersion),
     libraryDependencies ++= Seq(
       "jakarta.servlet" % "jakarta.servlet-api" % servletApiVersion % Provided
     ),
