@@ -1,5 +1,4 @@
-// https://typelevel.org/sbt-typelevel/faq.html#what-is-a-base-version-anyway
-ThisBuild / tlBaseVersion := "0.0" // your current series x.y
+ThisBuild / tlBaseVersion := "0.23" // your current series x.y
 
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / developers := List(
@@ -7,25 +6,38 @@ ThisBuild / developers := List(
   tlGitHubDev("rossabaker", "Ross A. Baker")
 )
 
-// publish website from this branch
-ThisBuild / tlSitePublishBranch := Some("main")
-
 val Scala213 = "2.13.16"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.6")
 ThisBuild / scalaVersion := Scala213 // the default Scala
+ThisBuild / startYear := Some(2013)
 
-lazy val root = tlCrossRootProject.aggregate(core)
+lazy val root = tlCrossRootProject.aggregate(servlet)
 
-lazy val core = crossProject(JVMPlatform, JSPlatform)
-  .crossType(CrossType.Pure)
-  .in(file("core"))
+val asyncHttpClientVersion = "2.12.3"
+val http4sVersion = "0.22.15"
+val jettyVersion = "9.4.46.v20220331"
+val servletVersion = "3.1.0"
+
+lazy val servlet = project
+  .in(file("servlet"))
   .settings(
-    name := "http4s-servlet",
+    description := "Portable servlet implementation for http4s servers",
     libraryDependencies ++= Seq(
-      "org.http4s" %%% "http4s-core" % "0.23.11",
-      "org.scalameta" %%% "munit" % "0.7.29" % Test,
-      "org.typelevel" %%% "munit-cats-effect-3" % "1.0.7" % Test
+      "org.http4s" %% "http4s-server" % http4sVersion,
+      "javax.servlet" % "javax.servlet-api" % servletVersion % Provided,
+      "org.asynchttpclient" % "async-http-client" % asyncHttpClientVersion % Test,
+      "org.eclipse.jetty" % "jetty-server" % jettyVersion % Test,
+      "org.eclipse.jetty" % "jetty-servlet" % jettyVersion % Test,
+      "org.http4s" %% "http4s-dsl" % http4sVersion % Test,
+    ),
+  )
+  .dependsOn(testing % "test->test")
+
+lazy val testing = project
+  .in(file("testing"))
+  .enablePlugins(NoPublishPlugin)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.http4s" %% "http4s-laws" % http4sVersion % Test
     )
   )
-
-lazy val docs = project.in(file("site")).enablePlugins(TypelevelSitePlugin)
