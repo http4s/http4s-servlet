@@ -45,7 +45,7 @@ class BlockingHttp4sServletSuite extends Http4sSuite {
     }
     .orNotFound
 
-  private val servletServer = ResourceFixture[Int](TestEclipseServer(servlet))
+  private val servletServer = ResourceFixture[Int](TestTomcatServer(servlet))
 
   private def get(serverPort: Int, path: String): IO[String] =
     testBlocker.delay[IO, String](

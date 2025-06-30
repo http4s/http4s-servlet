@@ -124,7 +124,7 @@ class RouterInServletSuite extends Http4sSuite {
       routes: HttpRoutes[IO],
       contextPath: String = "/",
       servletPath: String = "/*",
-  ): Resource[IO, Int] = TestEclipseServer(servlet(routes), contextPath, servletPath)
+  ): Resource[IO, Int] = TestTomcatServer(servlet(routes), contextPath, servletPath)
 
   private def servlet(routes: HttpRoutes[IO]) = new BlockingHttp4sServlet[IO](
     service = routes.orNotFound,

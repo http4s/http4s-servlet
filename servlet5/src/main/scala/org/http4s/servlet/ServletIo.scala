@@ -99,17 +99,66 @@ final case class NonBlockingServletIo[F[_]: Effect](chunkSize: Int) extends Serv
       val state = new AtomicReference[State](Init)
 
       def read(cb: Callback[Option[Chunk[Byte]]]): Unit = {
-        val buf = new Array[Byte](chunkSize)
-        val len = in.read(buf)
+        def readRecursive(acc: Vector[Array[Byte]], totalSize: Int): Unit =
+          if (!in.isReady) {
+            /* No more data ready, return what we have */
+            finishReading(acc, totalSize)
+          } else {
+            val buf = new Array[Byte](chunkSize)
+            val len = in.read(buf)
 
-        if (len == chunkSize) cb(rightSome(Chunk.bytes(buf)))
-        else if (len < 0) {
-          state.compareAndSet(Ready, Complete) // will not overwrite an `Errored` state
-          cb(rightNone)
-        } else if (len == 0) {
-          logger.warn("Encountered a read of length 0")
-          cb(rightSome(Chunk.empty))
-        } else cb(rightSome(Chunk.bytes(buf, 0, len)))
+            if (len < 0) {
+              /* No more data to read */
+              if (acc.isEmpty) {
+                state.compareAndSet(Ready, Complete) // will not overwrite an `Errored` state
+                cb(rightNone)
+              } else {
+                finishReading(acc, totalSize)
+              }
+            } else if (len == 0) {
+              /* No data available right now, but stream not finished */
+              if (acc.isEmpty) {
+                logger.warn("Encountered a read of length 0")
+                cb(rightSome(Chunk.empty))
+              } else {
+                finishReading(acc, totalSize)
+              }
+            } else {
+              /* Got some data */
+              if (len == chunkSize) {
+                val newAcc = acc :+ buf
+                val newTotalSize = totalSize + len
+                /* Got full chunk, continue reading as there might be more data is ready */
+                readRecursive(newAcc, newTotalSize)
+              } else {
+                val newAcc = acc :+ buf.take(len)
+                val newTotalSize = totalSize + len
+                /* If there are less data than chunkSize, it means available data are exhausted so finish reading. */
+                finishReading(newAcc, newTotalSize)
+              }
+            }
+          }
+
+        def finishReading(acc: Vector[Array[Byte]], totalSize: Int): Unit =
+          if (acc.isEmpty) {
+            /* No data was read. This may not happen in normal cases. */
+            cb(rightSome(Chunk.empty))
+          } else if (acc.size == 1) {
+            /* Single chunk, no need to combine */
+            cb(rightSome(Chunk.bytes(acc.head)))
+          } else {
+            /* Multiple chunks, combine them (already in correct order) */
+            val combined = new Array[Byte](totalSize)
+            var offset = 0
+            acc.foreach { chunk =>
+              val chunkLength = chunk.length
+              Array.copy(chunk, 0, combined, offset, chunkLength)
+              offset += chunkLength
+            }
+            cb(rightSome(Chunk.bytes(combined)))
+          }
+
+        readRecursive(Vector.empty, 0)
       }
 
       if (in.isFinished) Stream.empty

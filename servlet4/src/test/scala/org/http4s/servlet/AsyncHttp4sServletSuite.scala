@@ -23,7 +23,6 @@ import cats.effect.Timer
 import cats.syntax.all._
 import org.http4s.dsl.io._
 import org.http4s.server.DefaultServiceErrorHandler
-import org.http4s.syntax.all._
 import org.http4s.testing.AutoCloseableResource
 
 import java.net.URL
@@ -45,7 +44,7 @@ class AsyncHttp4sServletSuite extends Http4sSuite {
     }
     .orNotFound
 
-  private val servletServer = ResourceFixture[Int](TestEclipseServer(servlet))
+  private val servletServer = ResourceFixture[Int](TestTomcatServer(servlet))
 
   private def get(serverPort: Int, path: String): IO[String] =
     testBlocker.delay[IO, String](
@@ -55,47 +54,41 @@ class AsyncHttp4sServletSuite extends Http4sSuite {
       )(_.getLines().mkString)
     )
 
+  import org.asynchttpclient.Dsl._
+
+  private def post(serverPort: Int, path: String, contents: List[String]): IO[List[String]] =
+    Resource.make(IO(asyncHttpClient()))(c => IO(c.close())).use { client =>
+      contents
+        .parTraverse { body =>
+          IO.async { cb =>
+            client
+              .preparePost(s"http://127.0.0.1:$serverPort/$path")
+              .setBody(body)
+              .execute()
+              .toCompletableFuture()
+              .handle[Unit] {
+                case (response, null) => cb(Right(response.getResponseBody()))
+                case (_, t) => cb(Left(t))
+              }
+            ()
+          }
+        }
+    }
+
   servletServer.test("AsyncHttp4sServlet handle GET requests") { server =>
     get(server, "simple").assertEquals("simple")
   }
 
   servletServer.test("AsyncHttp4sServlet handle POST requests") { server =>
+    val alphabets = (('A' to 'Z') ++ ('a' to 'z')).toList
+    val alphabetsLength = alphabets.length
     val contents = (1 to 14).map { i =>
       val number =
         scala.math.pow(2, i.toDouble).toInt - 1 // -1 for the end-of-line to make awk play nice
-      s"$i $number ${"*".*(number)}\n"
+      s"$i $number ${(1 to number).map(_ => alphabets(scala.util.Random.nextInt(alphabetsLength))).mkString}\n"
     }.toList
 
-    import org.asynchttpclient.Dsl._
-    import org.asynchttpclient.Response
-
-    Resource.make(IO(asyncHttpClient()))(c => IO(c.close())).use { client =>
-      contents
-        .traverse { content =>
-          IO {
-            client
-              .preparePost(s"http://127.0.0.1:$server/echo")
-              .setBody(content)
-              .execute()
-              .toCompletableFuture()
-          }.flatMap { cf =>
-            IO.cancelable[Response] { cb =>
-              val stage = cf.handle[Unit] {
-                case (response, null) => cb(Right(response))
-                case (_, t) => cb(Left(t))
-              }
-
-              IO {
-                stage.cancel(false)
-                ()
-              }
-            }
-          }.flatMap { response =>
-            IO(response.getResponseBody())
-          }
-        }
-        .assertEquals(contents)
-    }
+    post(server, "echo", contents).assertEquals(contents)
   }
 
   servletServer.test("AsyncHttp4sServlet work for shifted IO") { server =>

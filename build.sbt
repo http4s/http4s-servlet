@@ -10,8 +10,7 @@ val Scala213 = "2.13.16"
 ThisBuild / crossScalaVersions := Seq("2.12.20", Scala213, "3.3.6")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 
-ThisBuild / githubWorkflowJavaVersions --= List(JavaSpec.temurin("8"), JavaSpec.temurin("11"))
-ThisBuild / tlJdkRelease := Some(17)
+ThisBuild / githubWorkflowJavaVersions --= List(JavaSpec.temurin("8"))
 ThisBuild / startYear := Some(2013)
 
 lazy val root = tlCrossRootProject.aggregate(
@@ -36,16 +35,22 @@ val scalacheckVersion = "1.15.4"
 
 val scalacheckEffectVersion = "1.0.3"
 
+val Tomcat9Version = "9.0.106"
+val Tomcat10Version = "10.0.27"
+val Tomcat10_1Version = "10.1.42"
+
 lazy val servlet4 = project
   .in(file("servlet4"))
   .settings(
     name := "http4s-servlet4",
     description := "Portable servlet implementation for http4s servers",
+    tlJdkRelease := Some(11),
+    Test / fork := true,
     libraryDependencies ++= Seq(
       "jakarta.servlet" % "jakarta.servlet-api" % servletApi4Version % Provided,
-      "org.eclipse.jetty" % "jetty-client" % jettyVersion % Test,
-      "org.eclipse.jetty" % "jetty-server" % jettyVersion % Test,
-      "org.eclipse.jetty.ee8" % "jetty-ee8-servlet" % jettyVersion % Test,
+      "org.apache.tomcat.embed" % "tomcat-embed-core" % Tomcat9Version % Test,
+      "org.apache.tomcat.embed" % "tomcat-embed-websocket" % Tomcat9Version % Test,
+      "org.apache.tomcat" % "tomcat-catalina" % Tomcat9Version % Test,
       "org.http4s" %% "http4s-dsl" % http4sVersion % Test,
       "org.http4s" %% "http4s-server" % http4sVersion,
       "org.typelevel" %% "munit-cats-effect-2" % munitCatsEffectVersion % Test,
@@ -59,11 +64,13 @@ lazy val servlet5 = project
   .settings(
     name := "http4s-servlet5",
     description := "Portable servlet implementation for http4s servers",
+    tlJdkRelease := Some(11),
+    Test / fork := true,
     libraryDependencies ++= Seq(
       "jakarta.servlet" % "jakarta.servlet-api" % servletApi6Version % Provided,
-      "org.eclipse.jetty" % "jetty-client" % jettyVersion % Test,
-      "org.eclipse.jetty" % "jetty-server" % jettyVersion % Test,
-      "org.eclipse.jetty.ee9" % "jetty-ee9-servlet" % jettyVersion % Test,
+      "org.apache.tomcat.embed" % "tomcat-embed-core" % Tomcat10Version % Test,
+      "org.apache.tomcat.embed" % "tomcat-embed-websocket" % Tomcat10Version % Test,
+      "org.apache.tomcat" % "tomcat-catalina" % Tomcat10Version % Test,
       "org.http4s" %% "http4s-dsl" % http4sVersion % Test,
       "org.http4s" %% "http4s-server" % http4sVersion,
       "org.typelevel" %% "munit-cats-effect-2" % munitCatsEffectVersion % Test,
@@ -77,11 +84,13 @@ lazy val servlet6 = project
   .settings(
     name := "http4s-servlet6",
     description := "Portable servlet implementation for http4s servers",
+    tlJdkRelease := Some(11),
+    Test / fork := true,
     libraryDependencies ++= Seq(
       "jakarta.servlet" % "jakarta.servlet-api" % servletApi6Version % Provided,
-      "org.eclipse.jetty" % "jetty-client" % jettyVersion % Test,
-      "org.eclipse.jetty" % "jetty-server" % jettyVersion % Test,
-      "org.eclipse.jetty.ee10" % "jetty-ee10-servlet" % jettyVersion % Test,
+      "org.apache.tomcat.embed" % "tomcat-embed-core" % Tomcat10_1Version % Test,
+      "org.apache.tomcat.embed" % "tomcat-embed-websocket" % Tomcat10_1Version % Test,
+      "org.apache.tomcat" % "tomcat-catalina" % Tomcat10_1Version % Test,
       "org.http4s" %% "http4s-dsl" % http4sVersion % Test,
       "org.http4s" %% "http4s-server" % http4sVersion,
       "org.typelevel" %% "munit-cats-effect-2" % munitCatsEffectVersion % Test,
