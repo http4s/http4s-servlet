@@ -46,7 +46,7 @@ class BlockingHttp4sServletSuite extends CatsEffectSuite {
     .orNotFound
 
   private val servletServer = ResourceFunFixture(
-    Dispatcher.parallel[IO].flatMap(d => TestEclipseServer(servlet(d)))
+    Dispatcher.parallel[IO].flatMap(d => TestUndertowServer(servlet(d)))
   )
 
   private def get(serverPort: Int, path: String): IO[String] =

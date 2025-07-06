@@ -141,7 +141,7 @@ class RouterInServletSuite extends CatsEffectSuite {
       contextPath: String = "/",
       servletPath: String = "/*",
       dispatcher: Dispatcher[IO],
-  ): Resource[IO, Int] = TestEclipseServer(servlet(routes, dispatcher), contextPath, servletPath)
+  ): Resource[IO, Int] = TestUndertowServer(servlet(routes, dispatcher), contextPath, servletPath)
 
   private def servlet(routes: HttpRoutes[IO], dispatcher: Dispatcher[IO]) =
     AsyncHttp4sServlet
