@@ -52,6 +52,25 @@ lazy val servlet = project
     ),
   )
 
+lazy val servletTesting = project
+  .in(file("servlet-testing"))
+  .enablePlugins(NoPublishPlugin)
+  .settings(
+    name := "http4s-servlet-testing",
+    description := "Portable servlet implementation for http4s servers",
+    // Jetty 12+ for testing, requires Java 17 or higher.
+    githubWorkflowJavaVersions --= Seq(JavaSpec.temurin("8"), JavaSpec.temurin("11")),
+    Test / fork := true,
+    libraryDependencies ++= Seq(
+      "org.eclipse.jetty" % "jetty-client" % jettyVersion % Test,
+      "org.eclipse.jetty" % "jetty-server" % jettyVersion % Test,
+      "org.eclipse.jetty.ee8" % "jetty-ee8-servlet" % jettyVersion % Test,
+      "org.http4s" %% "http4s-dsl" % http4sVersion % Test,
+      "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test,
+    ),
+  )
+  .dependsOn(servlet % "compile->compile;test->test")
+
 lazy val examples = project
   .in(file("examples"))
   .enablePlugins(NoPublishPlugin)
