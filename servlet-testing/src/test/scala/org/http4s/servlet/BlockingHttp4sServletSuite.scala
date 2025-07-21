@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package org.http4s
-package servlet
+package org.http4s.servlet
 
 import cats.effect.IO
 import cats.effect.Resource
 import cats.effect.kernel.Temporal
 import cats.effect.std.Dispatcher
 import munit.CatsEffectSuite
+import org.http4s.HttpRoutes
 import org.http4s.dsl.io._
-import org.http4s.syntax.all._
 
 import java.net.HttpURLConnection
 import java.net.URL
@@ -46,7 +45,7 @@ class BlockingHttp4sServletSuite extends CatsEffectSuite {
     .orNotFound
 
   private val servletServer = ResourceFunFixture(
-    Dispatcher.parallel[IO].flatMap(d => TestUndertowServer(servlet(d)))
+    Dispatcher.parallel[IO].flatMap(d => TestEclipseServer(servlet(d)))
   )
 
   private def get(serverPort: Int, path: String): IO[String] =
