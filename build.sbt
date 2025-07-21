@@ -25,7 +25,7 @@ val asyncHttpClientVersion = "2.12.3"
 val jettyVersion = "12.0.23"
 val http4sVersion = "0.23.30"
 val munitCatsEffectVersion = "2.1.0"
-val servletApiVersion = "4.0.4"
+val servletApiVersion = "6.1.0"
 val undertowVersion = "2.2.37.Final"
 
 lazy val servlet = project
