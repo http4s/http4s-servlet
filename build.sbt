@@ -41,7 +41,7 @@ lazy val servlet = project
     ),
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % "2.13.0",
-      "org.typelevel" %% "cats-effect" % "3.6.2",
+      "org.typelevel" %% "cats-effect" % "3.6.3",
       "jakarta.servlet" % "jakarta.servlet-api" % servletApiVersion % Provided,
       "io.undertow" % "undertow-core" % undertowVersion % Test,
       "io.undertow" % "undertow-servlet" % undertowVersion % Test,
