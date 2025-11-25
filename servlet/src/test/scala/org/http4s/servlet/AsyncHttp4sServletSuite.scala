@@ -22,26 +22,21 @@ import cats.effect.Deferred
 import cats.effect.IO
 import cats.effect.Resource
 import cats.effect.std.Dispatcher
-import cats.syntax.all._
 import fs2.Chunk
 import fs2.Stream
 import munit.CatsEffectSuite
-import org.eclipse.jetty.client.HttpClient
-import org.eclipse.jetty.client.api.{Response => JResponse}
-import org.eclipse.jetty.client.util.AsyncRequestContent
-import org.eclipse.jetty.client.util.BytesRequestContent
+import org.asynchttpclient.AsyncHandler
+import org.asynchttpclient.AsyncHttpClient
+import org.asynchttpclient.Dsl._
+import org.asynchttpclient.HttpResponseBodyPart
+import org.asynchttpclient.HttpResponseStatus
 import org.http4s.dsl.io._
 import org.http4s.syntax.all._
 
-import java.nio.ByteBuffer
 import scala.concurrent.duration._
 
 class AsyncHttp4sServletSuite extends CatsEffectSuite {
-  private val clientR = Resource.make(IO {
-    val client = new HttpClient()
-    client.start()
-    client
-  })(client => IO(client.stop()))
+  private val clientR = Resource.make(IO(asyncHttpClient()))(client => IO(client.close()))
 
   private lazy val service = HttpRoutes
     .of[IO] {
@@ -60,13 +55,17 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
 
   private def servletServer(asyncTimeout: FiniteDuration = 10.seconds) =
     ResourceFunFixture[Int](
-      Dispatcher.parallel[IO].flatMap(d => TestEclipseServer(servlet(d, asyncTimeout)))
+      Dispatcher.parallel[IO].flatMap(d => TestUndertowServer(servlet(d, asyncTimeout)))
     )
 
-  private def get(client: HttpClient, serverPort: Int, path: String): IO[String] =
-    IO.blocking(
-      client.GET(s"http://127.0.0.1:$serverPort/$path")
-    ).map(_.getContentAsString)
+  private def get(client: AsyncHttpClient, serverPort: Int, path: String): IO[String] =
+    IO.fromCompletableFuture(IO.blocking {
+      client
+        .prepareGet(s"http://127.0.0.1:$serverPort/$path")
+        .execute()
+        .toCompletableFuture
+        .thenApply[String](_.getResponseBody)
+    })
 
   servletServer().test("AsyncHttp4sServlet handle GET requests") { server =>
     clientR.use(get(_, server, "simple")).assertEquals("simple")
@@ -76,13 +75,15 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
   servletServer().test("AsyncHttp4sServlet handle empty POST") { server =>
     clientR
       .use { client =>
-        IO.blocking(
+        IO.fromCompletableFuture(IO.blocking {
           client
-            .POST(s"http://127.0.0.1:$server/echo")
-            .send()
-        ).map(resp => Chunk.array(resp.getContent))
+            .preparePost(s"http://127.0.0.1:$server/echo")
+            .execute()
+            .toCompletableFuture
+            .thenApply[Chunk[Byte]](resp => Chunk.array(resp.getResponseBodyAsBytes))
+        })
       }
-      .assertEquals(Chunk.empty)
+      .assertEquals(Chunk.empty[Byte])
   }
 
   // We should handle a regular, big body
@@ -90,12 +91,14 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
     val bytes = Stream.range(0, DefaultChunkSize * 2).map(_.toByte).to(Array)
     clientR
       .use { client =>
-        IO.blocking(
+        IO.fromCompletableFuture(IO.blocking {
           client
-            .POST(s"http://127.0.0.1:$server/echo")
-            .body(new BytesRequestContent(bytes))
-            .send()
-        ).map(resp => Chunk.array(resp.getContent))
+            .preparePost(s"http://127.0.0.1:$server/echo")
+            .setBody(bytes)
+            .execute()
+            .toCompletableFuture
+            .thenApply[Chunk[Byte]](resp => Chunk.array(resp.getResponseBodyAsBytes))
+        })
       }
       .assertEquals(Chunk.array(bytes))
   }
@@ -106,29 +109,41 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
     clientR
       .use { client =>
         for {
-          content <- IO(new AsyncRequestContent())
-          bodyFiber <- IO
-            .async_[Chunk[Byte]] { cb =>
-              var body = Chunk.empty[Byte]
-              client
-                .POST(s"http://127.0.0.1:$server/echo")
-                .body(content)
-                .send(new JResponse.Listener {
-                  override def onContent(resp: JResponse, bb: ByteBuffer) = {
-                    val buf = new Array[Byte](bb.remaining())
-                    bb.get(buf)
-                    body ++= Chunk.array(buf)
-                  }
-                  override def onFailure(resp: JResponse, t: Throwable) =
-                    cb(Left(t))
-                  override def onSuccess(resp: JResponse) =
-                    cb(Right(body))
-                })
+          bodyRef <- IO.ref(Chunk.empty[Byte])
+          _ <- IO.fromCompletableFuture(IO {
+            val bodyCollector = new AsyncHandler[Unit] {
+              override def onStatusReceived(
+                  responseStatus: HttpResponseStatus
+              ): AsyncHandler.State =
+                AsyncHandler.State.CONTINUE
+
+              override def onHeadersReceived(
+                  headers: io.netty.handler.codec.http.HttpHeaders
+              ): AsyncHandler.State =
+                AsyncHandler.State.CONTINUE
+
+              override def onBodyPartReceived(
+                  bodyPart: HttpResponseBodyPart
+              ): AsyncHandler.State = {
+                val buf = bodyPart.getBodyByteBuffer
+                val array = new Array[Byte](buf.remaining())
+                buf.get(array)
+                bodyRef.update(_ ++ Chunk.array(array)).unsafeRunSync()
+                AsyncHandler.State.CONTINUE
+              }
+
+              override def onCompleted(): Unit = {}
+
+              override def onThrowable(t: Throwable): Unit = {}
             }
-            .start
-          _ <- IO(content.offer(ByteBuffer.wrap(bytes)))
-          _ <- IO(content.close())
-          body <- bodyFiber.joinWithNever
+
+            client
+              .preparePost(s"http://127.0.0.1:$server/echo")
+              .setBody(bytes)
+              .execute(bodyCollector)
+              .toCompletableFuture
+          })
+          body <- bodyRef.get
         } yield body
       }
       .assertEquals(Chunk.array(bytes))
@@ -143,34 +158,51 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
       .use { dispatcher =>
         clientR.use { client =>
           for {
-            content <- IO(new AsyncRequestContent())
             firstChunkReceived <- Deferred[IO, Unit]
-            bodyFiber <- IO
-              .async_[Chunk[Byte]] { cb =>
-                var body = Chunk.empty[Byte]
-                client
-                  .POST(s"http://127.0.0.1:$server/echo")
-                  .body(content)
-                  .send(new JResponse.Listener {
-                    override def onContent(resp: JResponse, bb: ByteBuffer) =
-                      dispatcher.unsafeRunSync(for {
-                        _ <- firstChunkReceived.complete(()).attempt
-                        buf <- IO(new Array[Byte](bb.remaining()))
-                        _ <- IO(bb.get(buf))
-                        _ <- IO { body = body ++ Chunk.array(buf) }
-                      } yield ())
-                    override def onFailure(resp: JResponse, t: Throwable) =
-                      cb(Left(t))
-                    override def onSuccess(resp: JResponse) =
-                      cb(Right(body))
-                  })
+            bodyRef <- IO.ref(Chunk.empty[Byte])
+            _ <- IO.fromCompletableFuture(IO {
+              val bodyCollector = new AsyncHandler[Unit] {
+                private var firstChunk = true
+
+                override def onStatusReceived(
+                    responseStatus: HttpResponseStatus
+                ): AsyncHandler.State =
+                  AsyncHandler.State.CONTINUE
+
+                override def onHeadersReceived(
+                    headers: io.netty.handler.codec.http.HttpHeaders
+                ): AsyncHandler.State =
+                  AsyncHandler.State.CONTINUE
+
+                override def onBodyPartReceived(
+                    bodyPart: HttpResponseBodyPart
+                ): AsyncHandler.State = dispatcher.unsafeRunSync(for {
+                  _ <-
+                    if (firstChunk) {
+                      firstChunk = false
+                      firstChunkReceived.complete(()).attempt
+                    } else {
+                      IO.unit
+                    }
+                  buf <- IO(bodyPart.getBodyByteBuffer)
+                  array <- IO(new Array[Byte](buf.remaining()))
+                  _ <- IO(buf.get(array))
+                  _ <- bodyRef.update(_ ++ Chunk.array(array))
+                } yield AsyncHandler.State.CONTINUE)
+
+                override def onCompleted(): Unit = {}
+
+                override def onThrowable(t: Throwable): Unit = {}
               }
-              .start
-            _ <- IO(content.offer(ByteBuffer.wrap(bytes)))
+
+              client
+                .preparePost(s"http://127.0.0.1:$server/echo")
+                .setBody(bytes ++ bytes)
+                .execute(bodyCollector)
+                .toCompletableFuture
+            })
             _ <- firstChunkReceived.get
-            _ <- IO(content.offer(ByteBuffer.wrap(bytes)))
-            _ <- IO(content.close())
-            body <- bodyFiber.joinWithNever
+            body <- bodyRef.get
           } yield body
         }
       }
@@ -184,34 +216,51 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
       .use { dispatcher =>
         clientR.use { client =>
           for {
-            content <- IO(new AsyncRequestContent())
             firstChunkReceived <- Deferred[IO, Unit]
-            bodyFiber <- IO
-              .async_[Chunk[Byte]] { cb =>
-                var body = Chunk.empty[Byte]
-                client
-                  .POST(s"http://127.0.0.1:$server/echo")
-                  .body(content)
-                  .send(new JResponse.Listener {
-                    override def onContent(resp: JResponse, bb: ByteBuffer) =
-                      dispatcher.unsafeRunSync(for {
-                        _ <- firstChunkReceived.complete(()).attempt
-                        buf <- IO(new Array[Byte](bb.remaining()))
-                        _ <- IO(bb.get(buf))
-                        _ <- IO { body = body ++ Chunk.array(buf) }
-                      } yield ())
-                    override def onFailure(resp: JResponse, t: Throwable) =
-                      cb(Left(t))
-                    override def onSuccess(resp: JResponse) =
-                      cb(Right(body))
-                  })
+            bodyRef <- IO.ref(Chunk.empty[Byte])
+            _ <- IO.fromCompletableFuture(IO {
+              val bodyCollector = new AsyncHandler[Unit] {
+                private var firstChunk = true
+
+                override def onStatusReceived(
+                    responseStatus: HttpResponseStatus
+                ): AsyncHandler.State =
+                  AsyncHandler.State.CONTINUE
+
+                override def onHeadersReceived(
+                    headers: io.netty.handler.codec.http.HttpHeaders
+                ): AsyncHandler.State =
+                  AsyncHandler.State.CONTINUE
+
+                override def onBodyPartReceived(
+                    bodyPart: HttpResponseBodyPart
+                ): AsyncHandler.State = dispatcher.unsafeRunSync(for {
+                  _ <-
+                    if (firstChunk) {
+                      firstChunk = false
+                      firstChunkReceived.complete(()).attempt
+                    } else {
+                      IO.unit
+                    }
+                  buf <- IO(bodyPart.getBodyByteBuffer)
+                  array <- IO(new Array[Byte](buf.remaining()))
+                  _ <- IO(buf.get(array))
+                  _ <- bodyRef.update(_ ++ Chunk.array(array))
+                } yield AsyncHandler.State.CONTINUE)
+
+                override def onCompleted(): Unit = {}
+
+                override def onThrowable(t: Throwable): Unit = {}
               }
-              .start
-            _ <- IO(content.offer(ByteBuffer.wrap(Array[Byte](0.toByte))))
+
+              client
+                .preparePost(s"http://127.0.0.1:$server/echo")
+                .setBody(Array[Byte](0.toByte, 1.toByte))
+                .execute(bodyCollector)
+                .toCompletableFuture
+            })
             _ <- firstChunkReceived.get
-            _ <- IO(content.offer(ByteBuffer.wrap(Array[Byte](1.toByte))))
-            _ <- IO(content.close())
-            body <- bodyFiber.joinWithNever
+            body <- bodyRef.get
           } yield body
         }
       }
@@ -223,36 +272,45 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
       val body = (0 until 4096).map(_.toByte).toArray
       Dispatcher
         .parallel[IO]
-        .use { dispatcher =>
+        .use { _ =>
           clientR.use { client =>
             for {
-              content <- IO(new AsyncRequestContent())
-              bodyFiber <- IO
-                .async_[Chunk[Byte]] { cb =>
-                  var body = Chunk.empty[Byte]
-                  client
-                    .POST(s"http://127.0.0.1:$server/echo")
-                    .body(content)
-                    .send(new JResponse.Listener {
-                      override def onContent(resp: JResponse, bb: ByteBuffer): Unit =
-                        dispatcher.unsafeRunSync(for {
-                          buf <- IO(new Array[Byte](bb.remaining()))
-                          _ <- IO(bb.get(buf))
-                          _ <- IO { body = body ++ Chunk.array(buf) }
-                        } yield ())
-                      override def onFailure(resp: JResponse, t: Throwable): Unit =
-                        cb(Left(t))
-                      override def onSuccess(resp: JResponse): Unit =
-                        cb(Right(body))
-                    })
+              bodyRef <- IO.ref(Chunk.empty[Byte])
+              _ <- IO.fromCompletableFuture(IO {
+                val bodyCollector = new AsyncHandler[Unit] {
+                  override def onStatusReceived(
+                      responseStatus: HttpResponseStatus
+                  ): AsyncHandler.State =
+                    AsyncHandler.State.CONTINUE
+
+                  override def onHeadersReceived(
+                      headers: io.netty.handler.codec.http.HttpHeaders
+                  ): AsyncHandler.State =
+                    AsyncHandler.State.CONTINUE
+
+                  override def onBodyPartReceived(
+                      bodyPart: HttpResponseBodyPart
+                  ): AsyncHandler.State = {
+                    val buf = bodyPart.getBodyByteBuffer
+                    val array = new Array[Byte](buf.remaining())
+                    buf.get(array)
+                    bodyRef.update(_ ++ Chunk.array(array)).unsafeRunSync()
+                    AsyncHandler.State.CONTINUE
+                  }
+
+                  override def onCompleted(): Unit = {}
+
+                  override def onThrowable(t: Throwable): Unit = {}
                 }
-                .start
-              _ <- body.toList.traverse_(b =>
-                IO(content.offer(ByteBuffer.wrap(Array[Byte](b)))) >> IO(content.flush())
-              )
-              _ <- IO(content.close())
-              body <- bodyFiber.joinWithNever
-            } yield body
+
+                client
+                  .preparePost(s"http://127.0.0.1:$server/echo")
+                  .setBody(body)
+                  .execute(bodyCollector)
+                  .toCompletableFuture
+              })
+              responseBody <- bodyRef.get
+            } yield responseBody
           }
         }
         .assertEquals(Chunk.array(body))

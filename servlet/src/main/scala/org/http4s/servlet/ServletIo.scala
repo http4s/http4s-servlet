@@ -127,7 +127,7 @@ final case class NonBlockingServletIo[F[_]](chunkSize: Int)(implicit F: Async[F]
                   F.unit
               }
 
-            unsafeRunAndForget(go)
+            unsafeRunAndForget(loopIfReady)
           }
 
           def onAllDataRead(): Unit =
