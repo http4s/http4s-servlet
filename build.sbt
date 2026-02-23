@@ -10,8 +10,8 @@ ThisBuild / developers := List(
 // publish website from this branch
 ThisBuild / tlSitePublishBranch := Some("main")
 
-val Scala213 = "2.13.16"
-ThisBuild / crossScalaVersions := Seq("2.12.20", Scala213, "3.3.6")
+val Scala213 = "2.13.18"
+ThisBuild / crossScalaVersions := Seq("2.12.21", Scala213, "3.3.7")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 
 // Undertow 2 for testing, requires Java 8 or higher
@@ -22,11 +22,11 @@ ThisBuild / startYear := Some(2013)
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.12.4"
-val jettyVersion = "12.0.30"
+val jettyVersion = "12.0.32"
 val http4sVersion = "0.23.33"
 val munitCatsEffectVersion = "2.1.0"
 val servletApiVersion = "4.0.4"
-val undertowVersion = "2.2.37.Final"
+val undertowVersion = "2.2.39.Final"
 
 lazy val servlet = project
   .in(file("servlet"))
@@ -58,8 +58,6 @@ lazy val servletTesting = project
   .settings(
     name := "http4s-servlet-testing",
     description := "Portable servlet implementation for http4s servers",
-    // Jetty 12+ for testing, requires Java 17 or higher.
-    githubWorkflowJavaVersions --= Seq(JavaSpec.temurin("8"), JavaSpec.temurin("11")),
     Test / fork := true,
     libraryDependencies ++= Seq(
       "org.eclipse.jetty" % "jetty-client" % jettyVersion % Test,
@@ -78,8 +76,6 @@ lazy val examples = project
   .settings(
     name := "http4s-servlet-examples",
     description := "Examples for http4s-servlet",
-    // Jetty 12+ for testing, requires Java 17 or higher.
-    githubWorkflowJavaVersions --= Seq(JavaSpec.temurin("8"), JavaSpec.temurin("11")),
     startYear := Some(2013),
     fork := true,
     Jetty / containerLibs := List("org.eclipse.jetty.ee8" % "jetty-ee8-runner" % jettyVersion),
