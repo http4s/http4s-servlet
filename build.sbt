@@ -22,7 +22,7 @@ ThisBuild / startYear := Some(2013)
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.14.5"
-val jettyVersion = "12.0.34"
+val jettyVersion = "12.0.35"
 val http4sVersion = "0.23.33"
 val munitCatsEffectVersion = "2.2.0"
 val servletApiVersion = "4.0.4"
