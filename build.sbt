@@ -26,7 +26,7 @@ val jettyVersion = "12.0.38"
 val http4sVersion = "0.23.36"
 val munitCatsEffectVersion = "2.2.0"
 val servletApiVersion = "4.0.4"
-val undertowVersion = "2.2.40.Final"
+val undertowVersion = "2.4.3.Final"
 
 lazy val servlet = project
   .in(file("servlet"))
