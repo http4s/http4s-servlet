@@ -24,3 +24,17 @@ libraryDependencies ++= Seq(
 
 [http4s-jetty]: https://github.com/http4s/http4s-jetty/
 [http4s-tomcat]: https://github.com/http4s/http4s-tomcat/
+
+
+### Jetty 12 environments
+
+Jetty 12 core is independent of the Servlet API. Servlet support is provided by an environment-specific module:
+
+| Jetty environment | Platform       | Servlet API | Package namespace    |
+|:------------------|:---------------|:------------|:---------------------|
+| `ee8`             | Java EE 8      | 4.0         | `javax.servlet.*`    |
+| `ee9`             | Jakarta EE 9   | 5.0         | `jakarta.servlet.*`  |
+| `ee10`            | Jakarta EE 10  | 6.0         | `jakarta.servlet.*`  |
+| `ee11`            | Jakarta EE 11  | 6.1         | `jakarta.servlet.*`  |
+
+See Jetty's [environment compatibility table](https://github.com/jetty/jetty-examples#all-example-branches) and [web application deployment documentation](https://jetty.org/docs/jetty/12.1/operations-guide/deploy/index.html) for details.
