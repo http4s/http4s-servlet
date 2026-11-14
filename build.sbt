@@ -1,5 +1,5 @@
 // https://typelevel.org/sbt-typelevel/faq.html#what-is-a-base-version-anyway
-ThisBuild / tlBaseVersion := "0.25" // your current series x.y
+ThisBuild / tlBaseVersion := "0.27" // your current series x.y
 
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / developers := List(
@@ -25,7 +25,7 @@ val asyncHttpClientVersion = "2.12.3"
 val jettyVersion = "11.0.25"
 val http4sVersion = "0.23.30"
 val munitCatsEffectVersion = "2.2.0"
-val servletApiVersion = "5.0.0"
+val servletApiVersion = "6.1.0"
 
 lazy val servlet = project
   .in(file("servlet"))
