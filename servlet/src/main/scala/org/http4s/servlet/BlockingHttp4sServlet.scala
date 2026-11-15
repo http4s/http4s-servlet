@@ -41,7 +41,7 @@ class BlockingHttp4sServlet[F[_]] private (
       serviceErrorHandler: ServiceErrorHandler[F],
       dispatcher: Dispatcher[F],
   )(implicit F: Sync[F]) =
-    this(service, servletIo: ServletIo[F], serviceErrorHandler, dispatcher)(F)
+    this(service, servletIo: ServletIo[F], serviceErrorHandler, dispatcher)
 
   override def service(
       servletRequest: HttpServletRequest,
@@ -49,7 +49,7 @@ class BlockingHttp4sServlet[F[_]] private (
   ): Unit = {
     val result = F
       .defer {
-        val bodyWriter = servletIo.bodyWriter(servletResponse, dispatcher) _
+        val bodyWriter: BodyWriter[F] = servletIo.bodyWriter(servletResponse, dispatcher)
 
         val render = toRequest(servletRequest).fold(
           onParseFailure(_, servletResponse),
