@@ -22,17 +22,20 @@ import cats.effect.Deferred
 import cats.effect.IO
 import cats.effect.Resource
 import cats.effect.std.Dispatcher
-import cats.syntax.all.*
+import cats.syntax.all._
 import fs2.Chunk
 import fs2.Stream
 import munit.CatsEffectSuite
-import org.eclipse.jetty.client.{AsyncRequestContent, BytesRequestContent, HttpClient, Response as JResponse}
+import org.eclipse.jetty.client.AsyncRequestContent
+import org.eclipse.jetty.client.BytesRequestContent
+import org.eclipse.jetty.client.HttpClient
+import org.eclipse.jetty.client.{Response => JResponse}
 import org.eclipse.jetty.util.Callback
-import org.http4s.dsl.io.*
-import org.http4s.syntax.all.*
+import org.http4s.dsl.io._
+import org.http4s.syntax.all._
 
 import java.nio.ByteBuffer
-import scala.concurrent.duration.*
+import scala.concurrent.duration._
 
 class AsyncHttp4sServletSuite extends CatsEffectSuite {
   private val clientR = Resource.make(IO {
