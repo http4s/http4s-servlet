@@ -29,7 +29,7 @@ lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 val asyncHttpClientVersion = "2.12.3"
 val jettyVersion = "12.1.14"
 val http4sVersion = "0.23.30"
-val munitCatsEffectVersion = "2.2.0"
+val munitCatsEffectVersion = "2.2.1"
 val servletApiVersion = "6.0.0"
 
 lazy val servlet = project
