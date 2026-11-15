@@ -85,7 +85,7 @@ final case class BlockingServletIo[F[_]](chunkSize: Int)(implicit F: Sync[F]) ex
   */
 final case class NonBlockingServletIo[F[_]](chunkSize: Int)(implicit F: Async[F])
     extends ServletIo[F] {
-  private[this] val logger = getLogger
+  private val logger = getLogger
 
   /* The queue implementation is influenced by ideas in jetty4s
    * https://github.com/IndiscriminateCoding/jetty4s/blob/0.0.10/server/src/main/scala/jetty4s/server/HttpResourceHandler.scala
@@ -102,7 +102,7 @@ final case class NonBlockingServletIo[F[_]](chunkSize: Int)(implicit F: Async[F]
     Stream.eval(F.delay(servletRequest.getInputStream)).flatMap { in =>
       Stream.eval(Queue.bounded[F, Read](4)).flatMap { q =>
         val readBody = Stream.exec(F.delay(in.setReadListener(new ReadListener {
-          var buf: Array[Byte] = _
+          var buf: Array[Byte] = Array.emptyByteArray
           unsafeReplaceBuffer()
 
           def unsafeReplaceBuffer() =
