@@ -7,11 +7,16 @@ ThisBuild / developers := List(
   tlGitHubDev("rossabaker", "Ross A. Baker")
 )
 
+ThisBuild / githubWorkflowJavaVersions := Seq(
+  JavaSpec.temurin("17"),
+  JavaSpec.temurin("21"),
+)
+
 // publish website from this branch
 ThisBuild / tlSitePublishBranch := Some("main")
 
-val Scala213 = "2.13.16"
-ThisBuild / crossScalaVersions := Seq("2.12.20", Scala213, "3.3.5")
+val Scala213 = "2.13.18"
+ThisBuild / crossScalaVersions := Seq("2.12.21", Scala213, "3.10.1")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 
 // Jetty 10+, for testing, requires Java 11.
@@ -22,7 +27,7 @@ ThisBuild / startYear := Some(2013)
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.12.3"
-val jettyVersion = "11.0.25"
+val jettyVersion = "12.1.15"
 val http4sVersion = "0.23.30"
 val munitCatsEffectVersion = "2.2.0"
 val servletApiVersion = "5.0.0"
@@ -36,7 +41,7 @@ lazy val servlet = project
       "jakarta.servlet" % "jakarta.servlet-api" % servletApiVersion % Provided,
       "org.eclipse.jetty" % "jetty-client" % jettyVersion % Test,
       "org.eclipse.jetty" % "jetty-server" % jettyVersion % Test,
-      "org.eclipse.jetty" % "jetty-servlet" % jettyVersion % Test,
+      "org.eclipse.jetty.ee9" % "jetty-ee9-servlet" % jettyVersion % Test,
       "org.http4s" %% "http4s-dsl" % http4sVersion % Test,
       "org.http4s" %% "http4s-server" % http4sVersion,
       "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test,
@@ -52,7 +57,7 @@ lazy val examples = project
     description := "Examples for http4s-servlet",
     startYear := Some(2013),
     fork := true,
-    Jetty / containerLibs := List("org.eclipse.jetty" % "jetty-runner" % jettyVersion),
+    Jetty / containerLibs := List("org.eclipse.jetty.ee9" % "jetty-ee9-runner" % "12.0.41"),
     libraryDependencies ++= Seq(
       "jakarta.servlet" % "jakarta.servlet-api" % servletApiVersion % Provided
     ),
