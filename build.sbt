@@ -8,8 +8,8 @@ ThisBuild / developers := List(
 )
 
 ThisBuild / githubWorkflowJavaVersions := Seq(
-    JavaSpec.temurin("17"),
-    JavaSpec.temurin("21"),
+  JavaSpec.temurin("17"),
+  JavaSpec.temurin("21"),
 )
 
 // publish website from this branch
