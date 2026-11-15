@@ -26,7 +26,12 @@ import cats.syntax.all.*
 import fs2.Chunk
 import fs2.Stream
 import munit.CatsEffectSuite
-import org.eclipse.jetty.client.{AsyncRequestContent, BytesRequestContent, HttpClient, Response as JResponse}
+import org.eclipse.jetty.client.{
+  AsyncRequestContent,
+  BytesRequestContent,
+  HttpClient,
+  Response => JResponse,
+}
 import org.eclipse.jetty.util.Callback
 import org.http4s.dsl.io.*
 import org.http4s.syntax.all.*
@@ -246,7 +251,9 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
                 }
                 .start
               _ <- body.toList.traverse_(b =>
-                IO(content.write(ByteBuffer.wrap(Array[Byte](b)), Callback.NOOP)) >> IO(content.flush())
+                IO(content.write(ByteBuffer.wrap(Array[Byte](b)), Callback.NOOP)) >> IO(
+                  content.flush()
+                )
               )
               _ <- IO(content.close())
               body <- bodyFiber.joinWithNever

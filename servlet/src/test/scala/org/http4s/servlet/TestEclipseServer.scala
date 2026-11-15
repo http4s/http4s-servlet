@@ -23,7 +23,7 @@ import org.eclipse.jetty.ee11.servlet.{ServletContextHandler, ServletHolder}
 import org.eclipse.jetty.server.HttpConfiguration
 import org.eclipse.jetty.server.HttpConnectionFactory
 import org.eclipse.jetty.server.ServerConnector
-import org.eclipse.jetty.server.Server as EclipseServer
+import org.eclipse.jetty.server.{Server => EclipseServer}
 
 object TestEclipseServer {
 
