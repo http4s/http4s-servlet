@@ -249,7 +249,9 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
                 }
                 .start
               _ <- body.toList.traverse_(b =>
-                IO(content.write(ByteBuffer.wrap(Array[Byte](b)), Callback.NOOP)) >> IO(content.flush())
+                IO(content.write(ByteBuffer.wrap(Array[Byte](b)), Callback.NOOP)) >> IO(
+                  content.flush()
+                )
               )
               _ <- IO(content.close())
               body <- bodyFiber.joinWithNever
