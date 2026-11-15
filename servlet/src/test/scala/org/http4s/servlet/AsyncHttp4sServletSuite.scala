@@ -22,19 +22,17 @@ import cats.effect.Deferred
 import cats.effect.IO
 import cats.effect.Resource
 import cats.effect.std.Dispatcher
-import cats.syntax.all._
+import cats.syntax.all.*
 import fs2.Chunk
 import fs2.Stream
 import munit.CatsEffectSuite
-import org.eclipse.jetty.client.HttpClient
-import org.eclipse.jetty.client.api.{Response => JResponse}
-import org.eclipse.jetty.client.util.AsyncRequestContent
-import org.eclipse.jetty.client.util.BytesRequestContent
-import org.http4s.dsl.io._
-import org.http4s.syntax.all._
+import org.eclipse.jetty.client.{AsyncRequestContent, BytesRequestContent, HttpClient, Response as JResponse}
+import org.eclipse.jetty.util.Callback
+import org.http4s.dsl.io.*
+import org.http4s.syntax.all.*
 
 import java.nio.ByteBuffer
-import scala.concurrent.duration._
+import scala.concurrent.duration.*
 
 class AsyncHttp4sServletSuite extends CatsEffectSuite {
   private val clientR = Resource.make(IO {
@@ -126,7 +124,7 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
                 })
             }
             .start
-          _ <- IO(content.offer(ByteBuffer.wrap(bytes)))
+          _ <- IO(content.write(ByteBuffer.wrap(bytes), Callback.NOOP))
           _ <- IO(content.close())
           body <- bodyFiber.joinWithNever
         } yield body
@@ -166,9 +164,9 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
                   })
               }
               .start
-            _ <- IO(content.offer(ByteBuffer.wrap(bytes)))
+            _ <- IO(content.write(ByteBuffer.wrap(bytes), Callback.NOOP))
             _ <- firstChunkReceived.get
-            _ <- IO(content.offer(ByteBuffer.wrap(bytes)))
+            _ <- IO(content.write(ByteBuffer.wrap(bytes), Callback.NOOP))
             _ <- IO(content.close())
             body <- bodyFiber.joinWithNever
           } yield body
@@ -207,9 +205,9 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
                   })
               }
               .start
-            _ <- IO(content.offer(ByteBuffer.wrap(Array[Byte](0.toByte))))
+            _ <- IO(content.write(ByteBuffer.wrap(Array[Byte](0.toByte)), Callback.NOOP))
             _ <- firstChunkReceived.get
-            _ <- IO(content.offer(ByteBuffer.wrap(Array[Byte](1.toByte))))
+            _ <- IO(content.write(ByteBuffer.wrap(Array[Byte](1.toByte)), Callback.NOOP))
             _ <- IO(content.close())
             body <- bodyFiber.joinWithNever
           } yield body
@@ -248,7 +246,7 @@ class AsyncHttp4sServletSuite extends CatsEffectSuite {
                 }
                 .start
               _ <- body.toList.traverse_(b =>
-                IO(content.offer(ByteBuffer.wrap(Array[Byte](b)))) >> IO(content.flush())
+                IO(content.write(ByteBuffer.wrap(Array[Byte](b)), Callback.NOOP)) >> IO(content.flush())
               )
               _ <- IO(content.close())
               body <- bodyFiber.joinWithNever
