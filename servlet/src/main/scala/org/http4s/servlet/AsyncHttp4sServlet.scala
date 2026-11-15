@@ -61,7 +61,7 @@ class AsyncHttp4sServlet[F[_]] @deprecated("Use AsyncHttp4sServlet.builder", "0.
       val ctx = servletRequest.startAsync()
       ctx.setTimeout(asyncTimeoutMillis)
       // Must be done on the container thread for Tomcat's sake when using async I/O.
-      val bodyWriter = servletIo.bodyWriter(servletResponse, dispatcher) _
+      val bodyWriter: BodyWriter[F] = servletIo.bodyWriter(servletResponse, dispatcher)
       val result =
         toRequest(servletRequest)
           .fold(
@@ -70,9 +70,12 @@ class AsyncHttp4sServlet[F[_]] @deprecated("Use AsyncHttp4sServlet.builder", "0.
           )
           .recoverWith(errorHandler(servletRequest, servletResponse))
       dispatcher.unsafeRunAndForget(result)
-    } catch errorHandler(servletRequest, servletResponse).andThen(dispatcher.unsafeRunSync _)
+    } catch
+      errorHandler(servletRequest, servletResponse).andThen { result =>
+        dispatcher.unsafeRunSync(result)
+      }
 
-  private[this] val noopCancelToken = Some(F.unit)
+  private val noopCancelToken = Some(F.unit)
 
   private def handleRequest(
       ctx: AsyncContext,
