@@ -7,11 +7,16 @@ ThisBuild / developers := List(
   tlGitHubDev("rossabaker", "Ross A. Baker")
 )
 
+ThisBuild / githubWorkflowJavaVersions := Seq(
+  JavaSpec.temurin("17"),
+  JavaSpec.temurin("21"),
+)
+
 // publish website from this branch
 ThisBuild / tlSitePublishBranch := Some("main")
 
-val Scala213 = "2.13.16"
-ThisBuild / crossScalaVersions := Seq("2.12.20", Scala213, "3.3.5")
+val Scala213 = "2.13.18"
+ThisBuild / crossScalaVersions := Seq("2.12.21", Scala213, "3.10.1")
 ThisBuild / scalaVersion := Scala213 // the default Scala
 
 // Jetty 10+, for testing, requires Java 11.

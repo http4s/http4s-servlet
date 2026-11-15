@@ -50,8 +50,8 @@ abstract class Http4sServlet[F[_]](
   // micro-optimization: unwrap the service and call its .run directly
   protected val serviceFn: Request[F] => F[Response[F]] = service.run
 
-  protected var servletApiVersion: ServletApiVersion = _
-  private[this] var serverSoftware: ServerSoftware = _
+  protected var servletApiVersion: ServletApiVersion = null.asInstanceOf[ServletApiVersion]
+  private var serverSoftware: ServerSoftware = null.asInstanceOf[ServerSoftware]
 
   object ServletRequestKeys {
     val HttpSession: Key[Option[HttpSession]] = {
