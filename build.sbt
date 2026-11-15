@@ -25,7 +25,7 @@ val asyncHttpClientVersion = "2.12.3"
 val jettyVersion = "12.1.14"
 val http4sVersion = "0.23.30"
 val munitCatsEffectVersion = "2.2.0"
-val servletApiVersion = "5.0.0"
+val servletApiVersion = "6.0.0"
 
 lazy val servlet = project
   .in(file("servlet"))
@@ -36,7 +36,7 @@ lazy val servlet = project
       "jakarta.servlet" % "jakarta.servlet-api" % servletApiVersion % Provided,
       "org.eclipse.jetty" % "jetty-client" % jettyVersion % Test,
       "org.eclipse.jetty" % "jetty-server" % jettyVersion % Test,
-      "org.eclipse.jetty.ee11" % "jetty-ee11-servlet" % jettyVersion % Test,
+      "org.eclipse.jetty.ee10" % "jetty-ee10-servlet" % jettyVersion % Test,
       "org.http4s" %% "http4s-dsl" % http4sVersion % Test,
       "org.http4s" %% "http4s-server" % http4sVersion,
       "org.typelevel" %% "munit-cats-effect" % munitCatsEffectVersion % Test,
@@ -52,7 +52,7 @@ lazy val examples = project
     description := "Examples for http4s-servlet",
     startYear := Some(2013),
     fork := true,
-    Jetty / containerLibs := List("org.eclipse.jetty.ee11" % "jetty-ee11-runner" % "12.1.0.alpha2"),
+    Jetty / containerLibs := List("org.eclipse.jetty.ee10" % "jetty-ee10-runner" % "12.0.41"),
     libraryDependencies ++= Seq(
       "jakarta.servlet" % "jakarta.servlet-api" % servletApiVersion % Provided
     ),
