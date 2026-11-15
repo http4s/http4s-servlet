@@ -24,18 +24,18 @@ final case class HttpServletRequestStub(
 ) extends HttpServletRequest {
   def getInputStream(): ServletInputStream = inputStream
 
-  def authenticate(x$1: jakarta.servlet.http.HttpServletResponse): Boolean = ???
+  def authenticate(response: jakarta.servlet.http.HttpServletResponse): Boolean = ???
   def changeSessionId(): String = ???
   def getAuthType(): String = ???
   def getContextPath(): String = ???
   def getCookies(): Array[jakarta.servlet.http.Cookie] = ???
-  def getDateHeader(x$1: String): Long = ???
-  def getHeader(x$1: String): String = ???
+  def getDateHeader(s: String): Long = ???
+  def getHeader(s: String): String = ???
   def getHeaderNames(): java.util.Enumeration[String] = ???
-  def getHeaders(x$1: String): java.util.Enumeration[String] = ???
-  def getIntHeader(x$1: String): Int = ???
+  def getHeaders(s: String): java.util.Enumeration[String] = ???
+  def getIntHeader(s: String): Int = ???
   def getMethod(): String = ???
-  def getPart(x$1: String): jakarta.servlet.http.Part = ???
+  def getPart(s: String): jakarta.servlet.http.Part = ???
   def getParts(): java.util.Collection[jakarta.servlet.http.Part] = ???
   def getPathInfo(): String = ???
   def getPathTranslated(): String = ???
@@ -46,18 +46,18 @@ final case class HttpServletRequestStub(
   def getRequestedSessionId(): String = ???
   def getServletPath(): String = ???
   def getSession(): jakarta.servlet.http.HttpSession = ???
-  def getSession(x$1: Boolean): jakarta.servlet.http.HttpSession = ???
+  def getSession(s: Boolean): jakarta.servlet.http.HttpSession = ???
   def getUserPrincipal(): java.security.Principal = ???
   def isRequestedSessionIdFromCookie(): Boolean = ???
   def isRequestedSessionIdFromURL(): Boolean = ???
   def isRequestedSessionIdFromUrl(): Boolean = ???
   def isRequestedSessionIdValid(): Boolean = ???
-  def isUserInRole(x$1: String): Boolean = ???
-  def login(x$1: String, x$2: String): Unit = ???
+  def isUserInRole(s: String): Boolean = ???
+  def login(s: String, s2: String): Unit = ???
   def logout(): Unit = ???
-  def upgrade[T <: jakarta.servlet.http.HttpUpgradeHandler](x$1: Class[T]): T = ???
+  def upgrade[T <: jakarta.servlet.http.HttpUpgradeHandler](s: Class[T]): T = ???
   def getAsyncContext(): jakarta.servlet.AsyncContext = ???
-  def getAttribute(x$1: String): Object = ???
+  def getAttribute(s: String): Object = ???
   def getAttributeNames(): java.util.Enumeration[String] = ???
   def getCharacterEncoding(): String = ???
   def getContentLength(): Int = ???
@@ -69,17 +69,17 @@ final case class HttpServletRequestStub(
   def getLocalPort(): Int = ???
   def getLocale(): java.util.Locale = ???
   def getLocales(): java.util.Enumeration[java.util.Locale] = ???
-  def getParameter(x$1: String): String = ???
+  def getParameter(s: String): String = ???
   def getParameterMap(): java.util.Map[String, Array[String]] = ???
   def getParameterNames(): java.util.Enumeration[String] = ???
-  def getParameterValues(x$1: String): Array[String] = ???
+  def getParameterValues(s: String): Array[String] = ???
   def getProtocol(): String = ???
   def getReader(): java.io.BufferedReader = ???
-  def getRealPath(x$1: String): String = ???
+  def getRealPath(s: String): String = ???
   def getRemoteAddr(): String = ???
   def getRemoteHost(): String = ???
   def getRemotePort(): Int = ???
-  def getRequestDispatcher(x$1: String): jakarta.servlet.RequestDispatcher = ???
+  def getRequestDispatcher(s: String): jakarta.servlet.RequestDispatcher = ???
   def getScheme(): String = ???
   def getServerName(): String = ???
   def getServerPort(): Int = ???
@@ -87,12 +87,15 @@ final case class HttpServletRequestStub(
   def isAsyncStarted(): Boolean = ???
   def isAsyncSupported(): Boolean = ???
   def isSecure(): Boolean = ???
-  def removeAttribute(x$1: String): Unit = ???
-  def setAttribute(x$1: String, x$2: Object): Unit = ???
-  def setCharacterEncoding(x$1: String): Unit = ???
+  def removeAttribute(s: String): Unit = ???
+  def setAttribute(s: String, o: Object): Unit = ???
+  def setCharacterEncoding(s: String): Unit = ???
   def startAsync(
-      x$1: jakarta.servlet.ServletRequest,
-      x$2: jakarta.servlet.ServletResponse,
+      request: jakarta.servlet.ServletRequest,
+      response: jakarta.servlet.ServletResponse,
   ): jakarta.servlet.AsyncContext = ???
   def startAsync(): jakarta.servlet.AsyncContext = ???
+  def getProtocolRequestId(): String = ???
+  def getRequestId(): String = ???
+  def getServletConnection(): jakarta.servlet.ServletConnection = ???
 }

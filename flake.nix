@@ -10,7 +10,7 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ typelevel-nix.overlay ];
+          overlays = [ typelevel-nix.overlays.default ];
         };
       in
       {
@@ -18,7 +18,7 @@
           imports = [ typelevel-nix.typelevelShell ];
           name = "http4s-servlet-shell";
           typelevelShell = {
-            jdk.package = pkgs.jdk11;
+            jdk.package = pkgs.jdk17;
             nodejs.enable = true;
           };
         };
