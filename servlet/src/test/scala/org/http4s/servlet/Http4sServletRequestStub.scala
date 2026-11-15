@@ -95,4 +95,7 @@ final case class HttpServletRequestStub(
       x$2: jakarta.servlet.ServletResponse,
   ): jakarta.servlet.AsyncContext = ???
   def startAsync(): jakarta.servlet.AsyncContext = ???
+  def getProtocolRequestId(): String = ???
+  def getRequestId(): String = ???
+  def getServletConnection(): jakarta.servlet.ServletConnection = ???
 }
