@@ -19,6 +19,8 @@ libraryDependencies ++= Seq(
 | 0.23.x         | 0.23.x      | 3.1         | ✅         | ✅         | ✅      | Stable    |
 | 0.24.x         | 0.23.x      | 4.0         | ✅         | ✅         | ✅      | RC        |
 | 0.25.x         | 0.23.x      | 5.0         | ✅         | ✅         | ✅      | RC        |
+| 0.26.x         | 0.23.x      | 6.0         | ✅         | ✅         | ✅      | Milestone |
+| 0.27.x         | 0.23.x      | 6.1         | ✅         | ✅         | ✅      | Milestone |
 
 [http4s-jetty]: https://github.com/http4s/http4s-jetty/
 [http4s-tomcat]: https://github.com/http4s/http4s-tomcat/
