@@ -22,11 +22,11 @@ ThisBuild / startYear := Some(2013)
 lazy val root = tlCrossRootProject.aggregate(servlet, examples)
 
 val asyncHttpClientVersion = "2.16.1"
-val jettyVersion = "12.0.39"
+val jettyVersion = "12.1.5"
 val http4sVersion = "0.23.37"
 val munitCatsEffectVersion = "2.2.0"
 val servletApiVersion = "4.0.4"
-val undertowVersion = "2.2.40.Final"
+val undertowVersion = "2.2.41.Final"
 
 lazy val servlet = project
   .in(file("servlet"))
@@ -78,7 +78,7 @@ lazy val examples = project
     description := "Examples for http4s-servlet",
     startYear := Some(2013),
     fork := true,
-    Jetty / containerLibs := List("org.eclipse.jetty.ee8" % "jetty-ee8-runner" % jettyVersion),
+    Jetty / containerLibs := List("org.eclipse.jetty.ee8" % "jetty-ee8-runner" % "12.0.41"),
     libraryDependencies ++= Seq(
       "jakarta.servlet" % "jakarta.servlet-api" % servletApiVersion % Provided
     ),
